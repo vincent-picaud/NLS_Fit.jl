@@ -1,21 +1,22 @@
+ ```@meta
+CurrentModule = NLS_Fit
+```
+
 ```@setup session
-using NLS_Fit
-using DelimitedFiles
+#using NLS_Fit
+#using DelimitedFiles
 
 using Plots
 ENV["GKSwstype"]=100
 gr()
 
-# ENV["GKSwstype"]=100
-# using GR
-
-rootDir  = joinpath(dirname(pathof(NLS_Fit)), "..")
-dataDir = joinpath(rootDir,"data")
+#rootDir  = joinpath(dirname(pathof(NLS_Fit)), "..")
+#dataDir = joinpath(rootDir,"data")
 ```
 
 # Simple 1D Plot
 
-```@repl session
+```@example session
 Y = rand(10)
-plot(Y)
+plot(rand(10),rand(10))
 ```
