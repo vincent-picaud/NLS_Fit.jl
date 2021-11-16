@@ -11,7 +11,7 @@
 
         @test eval_y(model,0.0,θ) ≈ 1
 
-        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
     end
 
 
@@ -26,7 +26,7 @@
 
         @test eval_y(model,0.0,θ) ≈ 1
 
-        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
         
     end
 
@@ -40,7 +40,7 @@
 
         @test eval_y(model,0.0,θ) ≈ 2
 
-        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
         
     end
 
@@ -54,7 +54,7 @@
 
         @test eval_y(model,0.0,θ) ≈ 3
 
-        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
         
     end
 

@@ -9,5 +9,5 @@
 
     θ = rand(parameter_size(model))
 
-    @test (@ballocated eval_y($model,0.0,$θ)) == 0
+    @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
 end
