@@ -1,5 +1,6 @@
 module NLS_Fit
 
-# Write your package code here.
+include("abstract_model2fit.jl")
+include("peak/Peak.jl")
 
 end
