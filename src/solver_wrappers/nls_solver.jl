@@ -1,9 +1,9 @@
-export  NLS_ForwardDiff_From_Model2Fit
-
-using ForwardDiff
+export NLS_ForwardDiff_From_Model2Fit
 
 import NLS_Solver
+#: AbstractNLS, parameter_size, residue_size, eval_r, eval_r_J
 
+using ForwardDiff
 
 # Important: using "template" parameters allows to have 1 alloc in
 # eval_r (versus 6 if one uses X,Y::AbstractVector)
@@ -60,6 +60,7 @@ struct NLS_ForwardDiff_From_Model2Fit{MODEL2FIT_TYPE <: Abstract_Model2Fit,
 end
 
 
+
 NLS_Solver.parameter_size(nls::NLS_ForwardDiff_From_Model2Fit) = parameter_size(nls._fit_model)
 NLS_Solver.residue_size(nls::NLS_ForwardDiff_From_Model2Fit)  = length(nls._Y)
 
@@ -70,9 +71,9 @@ end
 
 function NLS_Solver.eval_r_J(nls::NLS_ForwardDiff_From_Model2Fit, θ::AbstractVector{T}) where {T}
     
-    r_evaluation = (r,θ)->(r .= eval_r(nls,θ))
+    r_evaluation = (r,θ)->(r .= NLS_Solver.eval_r(nls,θ))
     
-    r = Vector{T}(undef,residue_size(nls))
+    r = Vector{T}(undef,NLS_Solver.residue_size(nls))
 
     J = ForwardDiff.jacobian(r_evaluation, r, θ)
 
