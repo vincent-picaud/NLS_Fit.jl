@@ -6,5 +6,7 @@ using Test, BenchmarkTools
     include("peak/Peak.jl")    
 
     include("model2fit_sum.jl")    
+
+    include("solver_wrappers/Solver_Wrappers.jl")    
     
 end

@@ -1,57 +1,61 @@
-@testset "model2fit_sum.jl - empty left" begin
-    
-    model = Model2Fit_Empty()
-    model = model + Gaussian_Peak()
+@testset "model2fit_sum.jl" begin
 
-    @test parameter_size(model) == 3
+    @testset "Empty left" begin
+        
+        model = Model2Fit_Empty()
+        model = model + Gaussian_Peak()
 
-    θ=Float64[1, 0, 1]
+        @test parameter_size(model) == 3
 
-    @test eval_y(model,0.0,θ) ≈ 1
+        θ=Float64[1, 0, 1]
 
-    @test (@ballocated eval_y($model,0.0,$θ)) == 0
-    
-end
+        @test eval_y(model,0.0,θ) ≈ 1
 
-@testset "model2fit_sum.jl - empty right" begin
-    
-    model = Model2Fit_Empty()
-    model = Gaussian_Peak() + model
+        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+    end
 
-    @test parameter_size(model) == 3
 
-    θ=Float64[1, 0, 1]
+    @testset "Empty right" begin
+        
+        model = Model2Fit_Empty()
+        model = Gaussian_Peak() + model
 
-    @test eval_y(model,0.0,θ) ≈ 1
+        @test parameter_size(model) == 3
 
-    @test (@ballocated eval_y($model,0.0,$θ)) == 0
-    
-end
+        θ=Float64[1, 0, 1]
 
-@testset "model2fit_sum.jl - 2" begin
-    
-    model = Gaussian_Peak() + Gaussian_Peak()
+        @test eval_y(model,0.0,θ) ≈ 1
 
-    @test parameter_size(model) == 6
+        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        
+    end
 
-    θ=Float64[1, 0, 1, 1, 0, 4]
+    @testset "2 terms sum" begin
+        
+        model = Gaussian_Peak() + Gaussian_Peak()
 
-    @test eval_y(model,0.0,θ) ≈ 2
+        @test parameter_size(model) == 6
 
-    @test (@ballocated eval_y($model,0.0,$θ)) == 0
-    
-end
+        θ=Float64[1, 0, 1, 1, 0, 4]
 
-@testset "model2fit_sum.jl - 3" begin
-    
-    model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
+        @test eval_y(model,0.0,θ) ≈ 2
 
-    @test parameter_size(model) == 9
+        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        
+    end
 
-    θ=Float64[1, 0, 1, 1, 0, 4, 1, 0, 4]
+    @testset "3 terms sum" begin
+        
+        model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
 
-    @test eval_y(model,0.0,θ) ≈ 3
+        @test parameter_size(model) == 9
 
-    @test (@ballocated eval_y($model,0.0,$θ)) == 0
-    
+        θ=Float64[1, 0, 1, 1, 0, 4, 1, 0, 4]
+
+        @test eval_y(model,0.0,θ) ≈ 3
+
+        @test (@ballocated eval_y($model,0.0,$θ)) == 0
+        
+    end
+
 end

@@ -1,3 +1,5 @@
+export parameter_size, eval_y
+
 @doc raw"""
 
 Abstract type, base of all model to fit.
