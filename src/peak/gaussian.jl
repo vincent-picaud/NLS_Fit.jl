@@ -1,3 +1,5 @@
+export Gaussian_Peak
+export parameter_size, eval_y
 struct Gaussian_Peak <: Abstract_Model2Fit_Peak
 end
 

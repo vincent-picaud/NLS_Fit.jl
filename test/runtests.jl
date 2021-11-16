@@ -1,6 +1,8 @@
 using NLS_Fit
-using Test
+using Test, BenchmarkTools
 
 @testset "NLS_Fit.jl" begin
-    # Write your tests here.
+
+    include("peak/Peak.jl")    
+    
 end

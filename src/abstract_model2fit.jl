@@ -1,7 +1,7 @@
+@doc raw"""
 
-#
-# A model example
-#
+Abstract type, base of all model to fit.
+"""
 abstract type Abstract_Model2Fit end
 
 parameter_size(::Abstract_Model2Fit) = @assert(false,"To implement!")
