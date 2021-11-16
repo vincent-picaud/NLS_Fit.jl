@@ -1,0 +1,7 @@
+name = "NLS_Fit"
+uuid = "3b0ca1fe-482a-4a6a-9bcb-ed831cc48d07"
+authors = ["Vincent Picaud"]
+version = "0.1.0"
+
+[compat]
+julia = "1.6"
