@@ -9,7 +9,7 @@
 
     @test eval_y(model,0.0,θ) ≈ 1
 
-    @test (@allocated eval_y(model,0.0,θ)) == 0
+    @test (@ballocated eval_y($model,0.0,$θ)) == 0
     
 end
 
@@ -24,7 +24,7 @@ end
 
     @test eval_y(model,0.0,θ) ≈ 1
 
-    @test (@allocated eval_y(model,0.0,θ)) == 0
+    @test (@ballocated eval_y($model,0.0,$θ)) == 0
     
 end
 
@@ -38,7 +38,7 @@ end
 
     @test eval_y(model,0.0,θ) ≈ 2
 
-    @test (@allocated eval_y(model,0.0,θ)) == 0
+    @test (@ballocated eval_y($model,0.0,$θ)) == 0
     
 end
 
@@ -52,6 +52,6 @@ end
 
     @test eval_y(model,0.0,θ) ≈ 3
 
-    @test (@allocated eval_y(model,0.0,θ)) == 0
+    @test (@ballocated eval_y($model,0.0,$θ)) == 0
     
 end

@@ -7,6 +7,6 @@
 
     @test eval_y(model,0.0,θ) ≈ 1
 
-    @test (@allocated eval_y(model,0.0,θ)) == 0
+    @test (@ballocated eval_y($model,0.0,$θ)) == 0
     
 end

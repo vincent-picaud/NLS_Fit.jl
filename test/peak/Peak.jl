@@ -2,4 +2,6 @@
 
     include("gaussian.jl")
 
+    include("motif.jl")
+
 end
