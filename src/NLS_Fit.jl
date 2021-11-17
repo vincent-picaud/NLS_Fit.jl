@@ -7,6 +7,8 @@ include("model2fit_sum.jl")
 
 include("peak/Peak.jl")
 
+include("recalibration/Recalibration.jl")
+
 include("solver_wrappers/Solver_Wrappers.jl")
 
 end
