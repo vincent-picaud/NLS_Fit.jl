@@ -58,9 +58,32 @@ plot!(X,Y_fit, label = "model θ_fit")
 
 # Fit with recalibration
 
-This problem is 3 Gaussian at positions 5, 10, 20. However the loaded data (X,Y) presents a miss calibrated X. The "true" X is:
+This problem is 3 Gaussian at positions 5, 10, 20. However the loaded data `(X,Y)` presents a miss calibrated X. The "true" X is:
 ```math
-X = 1.1 X_\text{true} 0.2
+X = 1.1\ X_\text{true} + 0.2
+```
+
+This example use synthetic data that can simulated as follows:
+
+```julia
+using DelimitedFiles,Random
+using NLS_Fit
+
+Random.seed!(1234)
+
+model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
+θ1 = Float64[1,5,1]
+θ2 = Float64[1,10,1]
+θ3 = Float64[1,20,1]
+θ = vcat(θ1,θ2,θ3)
+
+X=Float64[1:0.25:30;]
+n=length(X)
+Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
+
+@. X = 1.1*X + 0.2
+
+writedlm("simple_recalibration.txt",hcat(X,Y))
 ```
 
 **Plot data :**
