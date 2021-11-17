@@ -23,7 +23,7 @@ nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
 conf = Levenberg_Marquardt_Conf()
 result = solve(nls,θ,conf)
 
-eval_x(model,X,solution(result))-
+eval_x(model,X,solution(result))
 eval_x(model,X,θ)
 
 

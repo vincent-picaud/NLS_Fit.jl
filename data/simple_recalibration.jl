@@ -6,14 +6,14 @@ using NLS_Fit
 
 Random.seed!(1234)
 
-n = 30
 model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
 θ1 = Float64[1,5,1]
 θ2 = Float64[1,10,1]
 θ3 = Float64[1,20,1]
 θ = vcat(θ1,θ2,θ3)
 
-X=Float64[1:n;]
+X=Float64[1:0.25:30;]
+n=length(X)
 Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
 
 @. X = 1.1*X + 0.2
