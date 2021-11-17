@@ -17,4 +17,4 @@ struct Model2Fit_Empty <: Abstract_Model2Fit
 end
 
 parameter_size(m::Model2Fit_Empty) = 0
-eval_y(m::Model2Fit_Empty,x::Any,θ::AbstractVector) = @assert(false,"Should never happen")
+eval_y!(m::Model2Fit_Empty,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = Y

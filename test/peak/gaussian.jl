@@ -5,8 +5,11 @@
 
     θ=Float64[1, 0, 1]
 
-    @test eval_y(model,0.0,θ) ≈ 1
+    @test eval_y(model,[0.0],θ) ≈ [1.0]
 
-    @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
+    X=rand(10)
+    Y=alloc_y(model,X,θ)
+    
+    @test (@benchmark eval_y!($model,$Y,$X,$θ)).allocs == 0
     
 end

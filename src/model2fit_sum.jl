@@ -36,11 +36,14 @@ end
 
 parameter_size(m::Model2Fit_Sum) = parameter_size(m._left) + parameter_size(m._right)
 
-function eval_y(m::Model2Fit_Sum,x::Any,θ::AbstractVector)
+function eval_y!(m::Model2Fit_Sum,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     @assert length(θ) == parameter_size(m)
+    @assert length(X) == length(Y)
     
-    eval_y(m._left,x,@view θ[1:parameter_size(m._left)]) +
-        eval_y(m._right,x,@view θ[(parameter_size(m._left)+1):end])
+    eval_y!(m._left,Y,X,@view θ[1:parameter_size(m._left)]) 
+    eval_y!(m._right,Y,X,@view θ[(parameter_size(m._left)+1):end])
+
+    Y
 end
 
 
