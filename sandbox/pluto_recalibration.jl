@@ -72,7 +72,7 @@ begin
 end
 
 # ╔═╡ e61704f1-5eae-4a35-9d5f-0f734e46ef03
-md"# Sovle the nonlinear least squares problem"
+md"# Solve the nonlinear least squares problem"
 
 # ╔═╡ e33fe5dd-db88-4de9-8816-b4c36d6765d1
 begin
