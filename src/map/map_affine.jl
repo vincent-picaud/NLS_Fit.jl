@@ -1,3 +1,7 @@
+export Map_Affine, Map_Affine_Monotonic
+
+# ****************************************************************
+
 @doc raw"""
 ```julia
 Map_Affine(X_hat_A => X_A, X_hat_B => X_B)
