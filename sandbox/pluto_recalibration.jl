@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.16.4
+# v0.17.1
 
 using Markdown
 using InteractiveUtils
@@ -36,8 +36,7 @@ md"## Uncalibrable model"
 # ╔═╡ 44a9850b-4ecc-42c6-8270-2ffad6903b09
 begin
 	model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
-	recal_model = Recalibration_Affine(model,X[1],X[end])
-
+	
 	θ1 = Float64[1,5,1]
 	θ2 = Float64[2,10,1]
 	θ3 = Float64[1,20,2]
@@ -52,7 +51,9 @@ Complete the previous model with a parametrized transformation used as calibrati
 
 # ╔═╡ 5ceea856-87f0-4874-860d-57cf1f31c5e8
 begin
-	θc = Float64[1,1]
+	recal_model = Recalibration_Affine_Monotonic(model,X[1],X[end])
+
+	θc = Float64[1,0]
 	θ_init_recal_model = vcat(θ_init_model, θc)
 
 	Y_init = eval_y(recal_model,X,θ_init_recal_model)
@@ -66,8 +67,8 @@ md"Define parameter bounds"
 # ╔═╡ fcc0e63e-d873-4af8-bfe2-55b41e2b9f1a
 begin
 	ε = eps(Float64)
-	lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.5]
-	upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,1.5]
+	lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.0]
+	upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,2.0]
 	bc = BoundConstraints(lower_bound,upper_bound)
 end
 
@@ -81,8 +82,17 @@ begin
 	result = solve(nls,θ_init_recal_model,bc,conf)
 end
 
+# ╔═╡ b2e98c3f-5de5-4c23-bbb7-80d39cf219fd
+md"Converged?"
+
 # ╔═╡ fb6f9b74-1687-4846-b070-58581a1b234b
 converged(result)
+
+# ╔═╡ 4bb856a1-5696-42c8-8e63-fd7abe0eb276
+md"Objective function value"
+
+# ╔═╡ 9fa86072-9483-4b63-8dc9-e94469c1a8e9
+objective_value(result)
 
 # ╔═╡ 3367e5bd-3159-4327-90a4-01b7799e7064
 solution(result)
@@ -113,7 +123,10 @@ end
 # ╠═fcc0e63e-d873-4af8-bfe2-55b41e2b9f1a
 # ╠═e61704f1-5eae-4a35-9d5f-0f734e46ef03
 # ╠═e33fe5dd-db88-4de9-8816-b4c36d6765d1
+# ╟─b2e98c3f-5de5-4c23-bbb7-80d39cf219fd
 # ╠═fb6f9b74-1687-4846-b070-58581a1b234b
+# ╟─4bb856a1-5696-42c8-8e63-fd7abe0eb276
+# ╠═9fa86072-9483-4b63-8dc9-e94469c1a8e9
 # ╠═3367e5bd-3159-4327-90a4-01b7799e7064
 # ╠═c30df4ad-de11-446c-84ed-33755a78e5aa
 # ╠═e7284fe8-79b8-4684-922c-f004cb98333e
