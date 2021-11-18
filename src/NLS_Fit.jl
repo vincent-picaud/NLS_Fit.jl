@@ -1,5 +1,7 @@
 module NLS_Fit
 
+include("map/Map.jl")
+
 include("abstract_model2fit.jl")
 
 include("model2fit_empty.jl")
