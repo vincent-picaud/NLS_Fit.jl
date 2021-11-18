@@ -92,7 +92,7 @@ writedlm("simple_recalibration.txt",hcat(X,Y))
 XY=readdlm(joinpath(dataDir,"simple_recalibration.txt")) # hide
 X = XY[:,1] # hide
 Y = XY[:,2] # hide
-plot(X,Y, seriestype = :scatter, label = "raw data", title = "Simple 1D Plot")
+plot(X,Y, seriestype = :scatter, label = "raw data", title = "Recalibration")
 ```
 
 
@@ -118,12 +118,19 @@ plot!(X,Y_init, label = "model θ_init")
 
 **Wrap and call a NLS_Solver :**
 
+We must constrain positions, we use a bound constrained solver.
+
 ```@example session
 using NLS_Solver
-
+ε = eps(Float64)
+lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.5]
+upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,1.5]
+bc = BoundConstraints(lower_bound,upper_bound)
+```
+```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(recal_model,X,Y)
-conf = Levenberg_Marquardt_Conf()
-result = solve(nls,θ_init_recal_model,conf)
+conf = Levenberg_Marquardt_BC_Conf()
+result = solve(nls,θ_init_recal_model,bc,conf)
 ```
 
 **Use result :**
