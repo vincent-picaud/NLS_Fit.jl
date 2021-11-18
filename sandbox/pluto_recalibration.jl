@@ -46,7 +46,7 @@ end
 # ╔═╡ 21353220-0e6b-40e4-8930-4889f9bb757a
 md"## Calibrable model
 
-Complete the previous model with a parametrized transformation used as calibration map
+Complete the previous model with a parameterized transformation used as calibration map
 "
 
 # ╔═╡ 5ceea856-87f0-4874-860d-57cf1f31c5e8

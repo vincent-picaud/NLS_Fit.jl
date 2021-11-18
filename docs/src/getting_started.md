@@ -98,22 +98,29 @@ plot(X,Y, seriestype = :scatter, label = "raw data", title = "Recalibration")
 
 **Prepare model and initial θ :**
 
+We first define the uncalibrated model
+
 ```@example session
 model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
-recal_model = Recalibration_Affine(model,X[1],X[end])
 
 θ1 = Float64[1,5,1]
-θ2 = Float64[1,10,1]
-θ3 = Float64[1,20,1]
+θ2 = Float64[2,10,1]
+θ3 = Float64[1,20,2]
 θ_init_model = vcat(θ1,θ2,θ3)
+```
 
-# calibration parameters
-θc = Float64[1,1]
-θ_init_recal_model = vcat(θ_init_model, θc)
+Then this model is complete with a parameterized transformation. Here we use a [`Map_Affine_Monotonic`](@ref) with initial parameters `θc = Float64[1,0]`
 
+```@example session
+recal_map = Map_Affine_Monotonic(X[1],X[end])
+recal_model = Recalibration(model,recal_map)
+	
+θ_map = Float64[1,0]
+θ_init_recal_model = vcat(θ_init_model, θ_map)
+	
 Y_init = eval_y(recal_model,X,θ_init_recal_model)
-
-plot!(X,Y_init, label = "model θ_init")
+	
+plot!(X,Y_init, label = "model θ_init")	
 ```
 
 **Wrap and call a NLS_Solver :**
@@ -121,12 +128,12 @@ plot!(X,Y_init, label = "model θ_init")
 We must constrain positions, we use a bound constrained solver.
 
 ```@example session
-using NLS_Solver
 ε = eps(Float64)
-lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.5]
-upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,1.5]
+lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.0] 
+upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,2.0]
 bc = BoundConstraints(lower_bound,upper_bound)
 ```
+
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(recal_model,X,Y)
 conf = Levenberg_Marquardt_BC_Conf()
@@ -152,6 +159,8 @@ To recalibrate X we can apply the fitted transformation:
 ```@example session
 X_recal = eval_x(recal_model,X,θ_fit_recal_model)
 ```
+
+TODO: to fix
 
 To plot fitted model using this recalibrated X, one must use `model`
 (and not `recal_model`). Do not forget to pop the to last calibration

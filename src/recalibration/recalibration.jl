@@ -13,7 +13,7 @@ Create a calibrable model
 calibrable_model = Recalibration_Affine(model_to_calibrate, calibration_map)
 ```
 
-where `model_to_calibrate` is an [`AbstractModel`](@ref) and
+where `model_to_calibrate` is an [`Abstract_Model2Fit`](@ref) and
 `calibration_map` is an [`Abstract_Map`](@ref)
 
 # Explanation
