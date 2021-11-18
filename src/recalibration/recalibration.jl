@@ -59,7 +59,7 @@ end
 
 function eval_y!(m::Recalibration,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector)
   
-    X = eval_x(m._map, X_hat, θ)
+    X = eval_x(m, X_hat, θ)
     
     s=parameter_size(m._model2calibrate)
     θ_model = @view θ[1:s]
