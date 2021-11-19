@@ -1,5 +1,5 @@
 export Model2Fit_Mapped_Parameters
-export get_model_θ
+export get_model, get_model_θ
 
 struct Model2Fit_Mapped_Parameters{MODEL <: Abstract_Model2Fit,
                                    MAP <: Abstract_Map,
@@ -31,6 +31,22 @@ end
 
 parameter_size(mp::Model2Fit_Mapped_Parameters) = parameter_size(mp._model) - length(mp._indices) + parameter_size(mp._map)
 
+@doc raw"""
+```julia
+get_model(mp::Model2Fit_Mapped_Parameters) -> Absatrct_Model2Fit
+```
+
+Get back the wrapped model
+"""
+get_model(mp::Model2Fit_Mapped_Parameters) = mp._model
+
+@doc raw"""
+```julia
+get_model_θ(mp::Model2Fit_Mapped_Parameters,θ::AbstractVector) -> θ::AbstractVector
+```
+
+Retrieve the parameter vector θ associated to the wrapped model [`get_model`](@ref).
+"""
 function get_model_θ(mp::Model2Fit_Mapped_Parameters,θ::AbstractVector)
     @assert length(θ) == parameter_size(mp)
     
@@ -45,6 +61,7 @@ end
 
 function eval_y!(mp::Model2Fit_Mapped_Parameters,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     θ_model = get_model_θ(mp,θ)
+    model = get_model(mp)
 
-    eval_y!(mp._model,Y,X,θ_model)
+    eval_y!(model,Y,X,θ_model)
 end

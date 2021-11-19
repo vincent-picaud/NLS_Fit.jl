@@ -1,5 +1,5 @@
 # Generate 3 Gaussian peak at position : 5, 10, 20 with difference
-# shape factor σ 1, 1.5, 2
+# shape factors σ 1, 1.5, 2
 #
 using DelimitedFiles,Random
 using NLS_Fit
