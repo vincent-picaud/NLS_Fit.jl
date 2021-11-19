@@ -7,10 +7,6 @@ using Test, BenchmarkTools
 
     include("map/Map.jl")    
 
-    include("peak/Peak.jl")    
+    include("model2fit/Model2Fit.jl")    
 
-    include("model2fit_sum.jl")    
-
-    include("solver_wrappers/Solver_Wrappers.jl")    
-    
 end
