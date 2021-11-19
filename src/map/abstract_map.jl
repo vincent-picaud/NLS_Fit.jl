@@ -2,7 +2,7 @@
 
 Map base type. 
 
-This type is an abstraction of ``hat{X}↦X``.
+This type is an abstraction of ``\hat{X}↦X``.
 
 Such transformations are used for recalibration or parameters varying
 with the space variable ``X``.
