@@ -16,7 +16,7 @@ X=Float64[1:0.25:30;]
 n=length(X)
 Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
 
-@. X = 1.1*X + 0.2
+@. X = 1.1*X + 0.2 # inverse map is: 0.91 * X - 0.18
 
 writedlm("simple_recalibration.txt",hcat(X,Y))
 

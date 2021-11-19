@@ -88,7 +88,7 @@ The `Map_Affine` map is defined as follows:
 X(\hat{X}) = L_A(\hat{X}) X_A θ_A +  L_B(\hat{X}) X_B θ_B
 ```
 
-With this parametrization you have to add the ``θ_B ≥ θ_A`` to insure
+With this parametrization you have to add the ``X_B θ_B ≥ X_A θ_A`` to insure
 that the map is increasing.
 
 On the other hand, with the `Map_Affine_Monotonic`
@@ -98,16 +98,15 @@ parametrization:
 X(\hat{X}) = L_A(\hat{X}) X_A θ_A +  L_B(\hat{X}) ( (X_B-X_A) θ_B + X_A θ_A )
 ```
 
-with 
+where 
 ```math
-\frac{d}{d\hat{X}} X = \frac{X_B-X_A}{\hat{X}_B-\hat{X}_A} θ_B
+\frac{dX}{d\hat{X}} = \frac{X_B-X_A}{\hat{X}_B-\hat{X}_A} θ_B
 ```
 
-we see that the ``θ_B`` parameter now plays the role a slope factor
-and you simply have to impose ``θ_B ≥ 0`` to preserve the increasing
-or decreasing character given by the sign of ``
-\frac{X_B-X_A}{\hat{X}_B-\hat{X}_A}`` (which is constant once the
-structure has been initialized).
+a simply bound constraint ``θ_B ≥ 0`` is sufficient to preserve the increasing
+or decreasing character. This preserved slope is given by the sign of ``
+\frac{X_B-X_A}{\hat{X}_B-\hat{X}_A}`` which is constant once the
+structure has been initialized.
 
 In peculiar, for ``(θ_A,θ_B) = (1,1)`` we have an affine map such that
 ``X(\hat{X}_A) = X_A`` and ``X(\hat{X}_B) = X_B``. Whereas for

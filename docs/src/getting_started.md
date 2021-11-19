@@ -14,6 +14,8 @@ rootDir  = joinpath(dirname(pathof(NLS_Fit)), "..")
 dataDir = joinpath(rootDir,"data")
 ```
 
+We present here some examples of increasing complexity.
+
 # Simple fit
 
 **Plot data :**
@@ -58,12 +60,12 @@ plot!(X,Y_fit, label = "model θ_fit")
 
 # Fit with recalibration
 
-This problem is 3 Gaussian at positions 5, 10, 20. However the loaded data `(X,Y)` presents a miss calibrated X. The "true" X is:
+This problem is 3 Gaussian peaks at positions 5, 10, 20. However the loaded data `(X,Y)` presents a miscalibrated X. This miscalibrated X is computed from The "true" X as follows:
 ```math
 X = 1.1\ X_\text{true} + 0.2
 ```
 
-This example use synthetic data that can simulated as follows:
+The complete process to generate the synthetic data is:
 
 ```julia
 using DelimitedFiles,Random
@@ -86,7 +88,7 @@ Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
 writedlm("simple_recalibration.txt",hcat(X,Y))
 ```
 
-**Plot data :**
+If we plot this, we get:
 
 ```@example session
 XY=readdlm(joinpath(dataDir,"simple_recalibration.txt")) # hide
@@ -95,10 +97,14 @@ Y = XY[:,2] # hide
 plot(X,Y, seriestype = :scatter, label = "raw data", title = "Recalibration")
 ```
 
+We can also plot miscalibrated data and the "true" one that can be retrieved by inverting the ``X(X_\text{true})`` relation:
 
-**Prepare model and initial θ :**
-
-We first define the uncalibrated model
+```@example session
+X_true = (X .- 0.2)/1.1
+plot(X_true, seriestype = :scatter, label = "true X", title = "X-axis miscalibration")
+plot!(X, seriestype = :scatter, label = "miscalibrated X")
+```
+The first step is to define an uncalibrated model.
 
 ```@example session
 model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
@@ -106,21 +112,21 @@ model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
 θ1 = Float64[1,5,1]
 θ2 = Float64[2,10,1]
 θ3 = Float64[1,20,2]
-θ_init_model = vcat(θ1,θ2,θ3)
+θ_uncalibrated_model = vcat(θ1,θ2,θ3)
 ```
 
-Then this model is complete with a parameterized transformation. Here we use a [`Map_Affine_Monotonic`](@ref) with initial parameters `θc = Float64[1,0]`
+Then this model is complete with a parameterized transformation. Here we use a [`Map_Affine_Monotonic`](@ref) with initial parameters `θ_map = Float64[θ_A,θ_B]`. The advantage of such transformation is that we can impose an increasing map with simple bound constraints `θ_B > 1`. More precisely, by `Map_Affine_Monotonic(X[1],X[end])` we define an identity recalibration map when `θ_map = [1.0, 0.0]`
 
 ```@example session
-recal_map = Map_Affine_Monotonic(X[1],X[end])
-recal_model = Recalibration(model,recal_map)
+recalibration_map = Map_Affine_Monotonic(X[1],X[end])
+recalibration_model = Recalibration(model,recalibration_map)
 	
-θ_map = Float64[1,0]
-θ_init_recal_model = vcat(θ_init_model, θ_map)
+θ_map = Float64[1,1]
+θ_init_recalibration_model = vcat(θ_uncalibrated_model, θ_map)
 	
-Y_init = eval_y(recal_model,X,θ_init_recal_model)
+Y_init = eval_y(recalibration_model,X,θ_init_recalibration_model)
 	
-plot!(X,Y_init, label = "model θ_init")	
+plot(X,Y_init, label = "model θ_init")	
 ```
 
 **Wrap and call a NLS_Solver :**
@@ -135,9 +141,9 @@ bc = BoundConstraints(lower_bound,upper_bound)
 ```
 
 ```@example session
-nls = NLS_ForwardDiff_From_Model2Fit(recal_model,X,Y)
+nls = NLS_ForwardDiff_From_Model2Fit(recalibration_model,X,Y)
 conf = Levenberg_Marquardt_BC_Conf()
-result = solve(nls,θ_init_recal_model,bc,conf)
+result = solve(nls,θ_init_recalibration_model,bc,conf)
 ```
 
 **Use result :**
@@ -147,9 +153,9 @@ converged(result)
 ```
 
 ```@example session
-θ_fit_recal_model = solution(result)
-Y_fit_recal_model = eval_y(recal_model,X,θ_fit_recal_model)
-plot!(X,Y_fit_recal_model, label = "model θ_fit")
+θ_fit_recalibration_model = solution(result)
+Y_fit_recalibration_model = eval_y(recalibration_model,X,θ_fit_recalibration_model)
+plot!(X,Y_fit_recalibration_model, label = "model θ_fit")
 ```
 
 **Recalibrate X :**
@@ -157,17 +163,17 @@ plot!(X,Y_fit_recal_model, label = "model θ_fit")
 To recalibrate X we can apply the fitted transformation:
 
 ```@example session
-X_recal = eval_x(recal_model,X,θ_fit_recal_model)
+X_recal = eval_x(recalibration_model,X,θ_fit_recalibration_model)
 ```
 
 TODO: to fix
 
 To plot fitted model using this recalibrated X, one must use `model`
-(and not `recal_model`). Do not forget to pop the to last calibration
+(and not `recalibration_model`). Do not forget to pop the to last calibration
 parameters from `θ`:
 
 ```@example session
-Y_recal = eval_y(model,X,@view θ_fit_recal_model[1:NLS_Fit.parameter_size(model)])
+Y_recal = eval_y(model,X,@view θ_fit_recalibration_model[1:NLS_Fit.parameter_size(model)])
 plot(X_recal,Y, label = "recalibrated data")
 plot!(X_recal,Y_recal, label = "fitted + recalibrated model")
 ```
