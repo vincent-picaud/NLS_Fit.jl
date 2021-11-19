@@ -3,7 +3,7 @@ include("abstract_model2fit.jl")
 include("empty_model.jl")
 include("model_sum.jl")
 
-include("mapped_θ.jl")
+include("mapped_parameters.jl")
 
 
 include("peak/Peak.jl")
