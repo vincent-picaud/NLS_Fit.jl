@@ -47,12 +47,17 @@ function eval_x(m::Map_Affine{T},
 
     θ_A = θ[1]
     θ_B = θ[2]
-    
-    Δ = 1/(first(m._hat_to_B)-first(m._hat_to_A))
 
-    basis_A(x) = (first(m._hat_to_B)-x)*Δ*last(m._hat_to_A)
-    basis_B(x) = (x-first(m._hat_to_A))*Δ*last(m._hat_to_B)
-    transform(x) = basis_A(x)*θ_A + basis_B(x)*θ_B
+    X_hat_A = first(m._hat_to_A)
+    X_A = last(m._hat_to_A)
+    X_hat_B = first(m._hat_to_B)
+    X_B = last(m._hat_to_B)
+
+    Δ = 1/(X_hat_B-X_hat_A)
+
+    basis_A(x) = (X_hat_B-x)*Δ
+    basis_B(x) = (x-X_hat_A)*Δ
+    transform(x) = basis_A(x)*X_A*θ_A + basis_B(x)*X_B*θ_B
 
     X=similar(X_hat,X_T)
     @. X = transform(X_hat)
@@ -90,12 +95,24 @@ On the other hand, with the `Map_Affine_Monotonic`
 parametrization:
 
 ```math
-X(\hat{X}) = L_A(\hat{X}) X_A θ_A +  L_B(\hat{X}) X_B (θ_B+θ_A)
+X(\hat{X}) = L_A(\hat{X}) X_A θ_A +  L_B(\hat{X}) ( (X_B-X_A) θ_B + X_A θ_A )
 ```
-you simply have to impose ``θ_B ≥ 0``.
 
-In peculiar, for ``(θ_A,θ_B) = (1,0)`` we have an affine map such that
-``X(\hat{X}_A) = X_A`` and ``X(\hat{X}_B) = X_B``.
+with 
+```math
+\frac{d}{d\hat{X}} X = \frac{X_B-X_A}{\hat{X}_B-\hat{X}_A} θ_B
+```
+
+we see that the ``θ_B`` parameter now plays the role a slope factor
+and you simply have to impose ``θ_B ≥ 0`` to preserve the increasing
+or decreasing character given by the sign of ``
+\frac{X_B-X_A}{\hat{X}_B-\hat{X}_A}`` (which is constant once the
+structure has been initialized).
+
+In peculiar, for ``(θ_A,θ_B) = (1,1)`` we have an affine map such that
+``X(\hat{X}_A) = X_A`` and ``X(\hat{X}_B) = X_B``. Whereas for
+``(θ_A,θ_B) = (1,0)`` we have a constant one.
+
 """
 struct Map_Affine_Monotonic{T} <: Abstract_Map
     _hat_to_A::Pair{T,T}
@@ -118,12 +135,17 @@ function eval_x(m::Map_Affine_Monotonic{T},
 
     θ_A = θ[1]
     θ_B = θ[2]
-    
-    Δ = 1/(first(m._hat_to_B)-first(m._hat_to_A))
 
-    basis_A(x) = (first(m._hat_to_B)-x)*Δ*last(m._hat_to_A)
-    basis_B(x) = (x-first(m._hat_to_A))*Δ*last(m._hat_to_B)
-    transform(x) = basis_A(x)*θ_A + basis_B(x)*(θ_A+θ_B)
+    X_hat_A = first(m._hat_to_A)
+    X_A = last(m._hat_to_A)
+    X_hat_B = first(m._hat_to_B)
+    X_B = last(m._hat_to_B)
+    
+    Δ = 1/(X_hat_B-X_hat_A)
+    
+    basis_A(x) = (X_hat_B-x)*Δ
+    basis_B(x) = (x-X_hat_A)*Δ
+    transform(x) = basis_A(x)*X_A*θ_A + basis_B(x)*((X_B-X_A)*θ_B+X_A*θ_A)
 
     X=similar(X_hat,X_T)
     @. X = transform(X_hat)
