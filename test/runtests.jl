@@ -3,6 +3,8 @@ using Test, BenchmarkTools
 
 @testset "NLS_Fit.jl" begin
 
+    include("misc/Misc.jl")    
+
     include("map/Map.jl")    
 
     include("peak/Peak.jl")    
