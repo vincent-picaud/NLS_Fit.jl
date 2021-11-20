@@ -151,3 +151,16 @@ function eval_x(m::Map_Affine_Monotonic{T},
 
     X
 end
+
+
+# note: maybe better to use:
+# @article{article,
+# author = {Murray, Kevin and Müller, Samuel and Turlach, Berwin},
+# year = {2016},
+# month = {02},
+# pages = {1-21},
+# title = {Fast and flexible methods for monotone polynomial fitting},
+# volume = {86},
+# journal = {Journal of Statistical Computation and Simulation},
+# doi = {10.1080/00949655.2016.1139582}
+# }                               
