@@ -18,7 +18,8 @@ We present here some examples of increasing complexity.
 
 # Simple fit
 
-**Plot data :**
+The first example is a simple Gaussian peak fit. We use the
+`data/simple_gaussian.txt` data file.
 
 ```@example session
 XY=readdlm(joinpath(dataDir,"simple_gaussian.txt")) # hide
@@ -27,7 +28,11 @@ Y = XY[:,2] # hide
 plot(X,Y, seriestype = :scatter, label = "raw data", title = "Simple 1D Plot")
 ```
 
-**Prepare model and initial θ :**
+The model here is really simple, a single Gaussian peak. One must also
+provide a parameter vector `θ`. For this model, `θ=[h,μ,σ]` where `h`
+is peak height, `μ` its center and `σ` its shape factor (see
+[`Gaussian_Peak`](@ref) for further details). The function `eval_y()`
+eval model Y values given X values and its parameter vector θ.
 
 ```@example session
 model = Gaussian_Peak()
