@@ -1,5 +1,12 @@
 export Gaussian_Peak
 
+@doc raw"""
+Gaussian peak
+
+```math
+p(x; θ = [h,μ,σ]) = h e^{-\frac12 \left(\frac{x-μ}{σ} \right)^2
+```
+"""
 struct Gaussian_Peak <: Abstract_Model2Fit_Peak
 end
 
