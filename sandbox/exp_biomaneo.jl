@@ -8,6 +8,7 @@ using Revise
 using NLS_Fit
 using NLS_Solver
 using NLS_Models
+using DelimitedFiles
 
 # ================================================================
 
@@ -76,12 +77,13 @@ end
 
 # Inputs
 #
-spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+#spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 spectrum.Y ./= maximum(spectrum.Y)
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 
 # Remove baseline
-#
+# ================
 Y_baseline = compute_baseline_snip(spectrum,
                                    snip_halfwindow = 60,
                                    smoothing_halfwindow = 20)
@@ -89,30 +91,50 @@ Y_baseline = compute_baseline_snip(spectrum,
 spectrum = spectrum - Y_baseline
 
 # Create ROI model & spectrum
-#
+# ================
 grouped = groupbysupport(vect_of_isotopicmotif,by=get_ROI_interval)
 stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spectrum)
 
+# Add a σ law
+# ================
+
+# The created model is a succession of isotopic model, θ=(h,σ)
+# now we put an affine model for σ. For that we need:
+# 1/ σ_index in θ
+# 2/ position m/z of each isopoic model
+#
+σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models))
+isotopicmotif_centers = map(get_position,grouped.objects)
+
+map_mz_to_σ = Map_Affine(1000.0  => 1.0, 3000.0 => 4.0) # the σ map: m/z -> σ(m/z)
+
+stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,σ_index,isotopicmotif_centers)
+
+# Initialize θ
+# ================
+
 # create θ : (h,σ) x number of ROIs
 #
-n_θ = NLS_Fit.parameter_size(stacked_models)
-θ_init = zeros(n_θ) .+ 0.5
+n_θ = NLS_Fit.parameter_size(stacked_models_σ_law)
+θ_init = ones(n_θ)
 θ_lb = zeros(n_θ)
 θ_ub = zeros(n_θ) .+ 6
 
-# prepare solver
-#
+# Solve the problem
+# ================
 bc = BoundConstraints(θ_lb,θ_ub)
-nls = NLS_ForwardDiff_From_Model2Fit(stacked_models,ROI_spectrum.X,ROI_spectrum.Y)
+nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law,ROI_spectrum.X,ROI_spectrum.Y)
 conf = Levenberg_Marquardt_BC_Conf()
 
 result = NLS_Solver.solve(nls,θ_init,bc,conf)
 
-Y_fit = eval_y(stacked_models,ROI_spectrum.X,solution(result))
+# Plot solution
+# ================
+Y_fit = eval_y(stacked_models_σ_law,ROI_spectrum.X,solution(result))
 
-# gnuplot
+# save text file, to be used by gnuplot
 #
-using DelimitedFiles
-
 writedlm("poub.txt",hcat(ROI_spectrum.X,ROI_spectrum.Y,Y_fit))
 
+# ****************************************************************
+solution(result)
