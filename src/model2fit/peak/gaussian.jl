@@ -4,7 +4,7 @@ export Gaussian_Peak
 Gaussian peak
 
 ```math
-p(x; θ = [h,μ,σ]) = h e^{-\frac12 \left(\frac{x-μ}{σ} \right)^2
+p(x; θ = [h,μ,σ]) = h e^{-\frac{1}{2} \left(\frac{x-μ}{σ} \right)^2}
 ```
 """
 struct Gaussian_Peak <: Abstract_Model2Fit_Peak
