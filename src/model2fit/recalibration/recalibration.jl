@@ -57,13 +57,13 @@ function eval_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
 
 end
 
-function eval_y!(m::Recalibration,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector)
+function accumulate_y!(m::Recalibration,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector)
   
     X = eval_x(m, X_hat, θ)
     
     s=parameter_size(m._model2calibrate)
     θ_model = @view θ[1:s]
 
-    eval_y!(m._model2calibrate,Y,X,θ_model)
+    accumulate_y!(m._model2calibrate,Y,X,θ_model)
 end
 

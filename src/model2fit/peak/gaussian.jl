@@ -12,7 +12,7 @@ end
 
 parameter_size(::Gaussian_Peak) = 3
 
-function eval_y!(m::Gaussian_Peak,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+function accumulate_y!(m::Gaussian_Peak,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     @assert length(θ) == parameter_size(m)
     @assert length(Y) == length(X)
     
@@ -35,7 +35,7 @@ end
 
 parameter_size(::Const_μ_Gaussian_Peak) = 2
 
-function eval_y!(m::Const_μ_Gaussian_Peak,Y::AbstractVector,X::AbstractVector,θ::AbstractVector{T}) where {T}
+function accumulate_y!(m::Const_μ_Gaussian_Peak,Y::AbstractVector,X::AbstractVector,θ::AbstractVector{T}) where {T}
     @assert length(θ) == parameter_size(m)
     @assert length(Y) == length(X)
 
@@ -45,5 +45,5 @@ function eval_y!(m::Const_μ_Gaussian_Peak,Y::AbstractVector,X::AbstractVector,�
 
     θ̂ = @SVector T[h,μ,σ]
 
-    eval_y!(Gaussian_Peak(),Y,X,θ̂)
+    accumulate_y!(Gaussian_Peak(),Y,X,θ̂)
 end

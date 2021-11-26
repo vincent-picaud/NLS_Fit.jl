@@ -12,5 +12,5 @@
     X = rand(10)
     Y = zeros(10)
     
-    @test (@benchmark eval_y!($model,$Y,$X,$θ)).allocs == 0
+    @test (@benchmark accumulate_y!($model,$Y,$X,$θ)).allocs == 0
 end

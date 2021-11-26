@@ -59,9 +59,9 @@ function get_model_θ(mp::Model2Fit_Mapped_Parameters,θ::AbstractVector)
     insert_some_elements(θ_model_reduced, mp._indices,mapped_elements)
 end
 
-function eval_y!(mp::Model2Fit_Mapped_Parameters,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+function accumulate_y!(mp::Model2Fit_Mapped_Parameters,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     θ_model = get_model_θ(mp,θ)
     model = get_model(mp)
 
-    eval_y!(model,Y,X,θ_model)
+    accumulate_y!(model,Y,X,θ_model)
 end
