@@ -74,7 +74,10 @@ end
 
 # Inputs
 # ================
-spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
+#spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
+#spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
+#spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 spectrum.Y ./= maximum(spectrum.Y)
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
@@ -103,7 +106,7 @@ stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spe
 σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models))
 isotopicmotif_centers = map(get_position,grouped.objects)
 
-map_mz_to_σ = Map_Affine(1000.0  => 2.0, 3000.0 => 6.0) # the σ map: m/z -> σ(m/z)
+map_mz_to_σ = Map_Affine_Monotonic(1000.0  => 2.0, 3000.0 => 6.0) # the σ map: m/z -> σ(m/z)
 
 stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,σ_index,isotopicmotif_centers)
 
@@ -112,37 +115,40 @@ stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,
 recalibration_map = Map_Affine_Monotonic(ROI_spectrum.X[1],ROI_spectrum.X[end])
 stacked_models_σ_law_recalibration = Recalibration(stacked_models_σ_law,recalibration_map)
 
-
-# chose our model
-# ================
-model = stacked_models_σ_law_recalibration
-
 # Initialize θ
 # ================
 
-# create θ : (h,σ) x number of ROIs
+# create θ : h1,...h21, slaw1,slaw2, cal1,cal2
 #
-n_θ = NLS_Fit.parameter_size(model)
+n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration)
 θ_init = ones(n_θ)
 θ_lb = zeros(n_θ)
 θ_ub = zeros(n_θ) .+ 6
-θ_init[1:21].=0.01
+θ_init = solve_linear_parameters(stacked_models_σ_law_recalibration,
+                                 ROI_spectrum.X,
+                                 ROI_spectrum.Y,
+                                 θ_init,
+                                 [1:21;])
 
-Y_fit_init = eval_y(model,ROI_spectrum.X,θ_init) # for gnuplot
+Y_fit_init = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,θ_init) # for gnuplot
 
 # Solve the problem
 # ================
 bc = BoundConstraints(θ_lb,θ_ub)
-nls = NLS_ForwardDiff_From_Model2Fit(model,ROI_spectrum.X,ROI_spectrum.Y)
+nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration,ROI_spectrum.X,ROI_spectrum.Y)
 conf = Levenberg_Marquardt_BC_Conf()
 
 result = NLS_Solver.solve(nls,θ_init,bc,conf)
 
 # Plot solution
 # ================
-Y_fit = eval_y(model,ROI_spectrum.X,solution(result))
+Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
 
 # save text file, to be used by gnuplot
+#
+# plot "poub.txt" u 1:2 w l
+# replot "poub.txt" u 1:4 w l t "init"
+# replot "poub.txt" u 1:3 w l lw 2 t "finited"
 #
 writedlm("poub.txt",hcat(ROI_spectrum.X,ROI_spectrum.Y,Y_fit,Y_fit_init))
 
@@ -151,3 +157,5 @@ solution(result)
 
 # using BenchmarkTools
 # @benchmark NLS_Solver.solve($nls,$θ_init,$bc,$conf)
+
+
