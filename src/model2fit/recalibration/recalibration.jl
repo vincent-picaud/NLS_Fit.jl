@@ -1,4 +1,5 @@
 export Recalibration
+export eval_calibrated_x
 
 # ****************************************************************
 # Implement affine recalibration
@@ -27,7 +28,7 @@ eval_y(calibrable_model,X_hat,[θ, θ_map])
 is equivalent to 
 
 ```julia
-eval_y(model_to_calibrate,eval_x(X_hat, θ_map), [θ])
+eval_y(model_to_calibrate,eval_calibrated_x(X_hat, θ_map), [θ])
 ```
 
 """
@@ -80,14 +81,14 @@ parameter_size(m::Recalibration) = parameter_size(m._model2calibrate)+parameter_
 
 @doc raw"""
 ```julia
-eval_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector) -> AbstractVector
+eval_calibrated_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector) -> AbstractVector
 ```
 
 Compute the calibrated ``X`` from the reference domain ``\hat{X}`` for
 the given transformation parameters ``θ``.
 
 """
-function eval_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
+function eval_calibrated_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
     _visit_get_X(m,X_hat,θ)
 end
 

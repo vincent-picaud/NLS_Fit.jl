@@ -158,7 +158,7 @@ Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(resul
 # Compute the calibrated spectrum and keep the model without the
 # recalibration extra-layer
 # -> must implement visit before 
-#recalibrated_spectrum = Spectrum(eval_x,
+#recalibrated_spectrum = Spectrum(eval_calibrated_x,
 
 # save text file, to be used by gnuplot
 #

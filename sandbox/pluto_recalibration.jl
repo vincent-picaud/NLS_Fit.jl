@@ -63,7 +63,7 @@ begin
 end
 
 # ╔═╡ fed24429-8e20-4601-8bf8-5a4b401b2534
- NLS_Fit.eval_x(recal_model,X,θ_init_recal_model)
+ NLS_Fit.eval_calibrated_x(recal_model,X,θ_init_recal_model)
 
 # ╔═╡ f331ea35-4d56-4ced-a76e-de621de25593
 md"Define parameter bounds"

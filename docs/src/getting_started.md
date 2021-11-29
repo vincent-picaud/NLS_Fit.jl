@@ -168,7 +168,7 @@ plot!(X,Y_fit_recalibration_model, label = "fitted model")
 To recalibrate X we can apply the fitted transformation:
 
 ```@example session
-X_recal = eval_x(recalibration_model,X,θ_fit_recalibration_model)
+X_recal = eval_calibrated_x(recalibration_model,X,θ_fit_recalibration_model)
 ```
 
 TODO: to fix
