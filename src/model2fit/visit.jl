@@ -60,6 +60,30 @@ function visit(mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector,actio
     end
 end
 
+# Extra comment:
+#
+# Most of the time
+# - visit_submodel_size(model)
+# - visit_get_submodel(model,submodel_idx)
+# - visit_get_X(model,submodel_idx,X,θ)
+# - visit_get_θ(model,submodel_idx,X,θ)
+#
+# do not require all their arguments, by a example if the model has
+# only one submodel and does not modify X, then
+#
+# visit_get_X(model,submodel_idx,X,θ) = X
+#
+# A convention we try to use is to define sibling function, with a _
+# prefix that only use the required arguments:
+#
+# _visit_get_X(model,X) = X
+# visit_get_X(model,submodel_idx,X,θ) = (sanity checks +) _visit_get_X(model,X)
+#
+# typical example: see src/model2fit/mapped_parameters.jl
+#
+
+# Convience methods ================
+#
 function visit_debug(mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector)
     action = function visit_default_action(m::Abstract_Model2Fit,x::AbstractVector,θ::AbstractVector)
         @assert parameter_size(m)==size(θ,1)

@@ -1,5 +1,5 @@
 export Model2Fit_Mapped_Parameters
-export get_model, get_model_θ
+export get_model_θ, get_model
 
 struct Model2Fit_Mapped_Parameters{MODEL <: Abstract_Model2Fit,
                                    MAP <: Abstract_Map,
@@ -29,8 +29,61 @@ struct Model2Fit_Mapped_Parameters{MODEL <: Abstract_Model2Fit,
     
 end
 
+# Visit  ================
+#
+visit_submodel_size(model::Model2Fit_Mapped_Parameters) = 1
+
+function _visit_get_submodel(model::Model2Fit_Mapped_Parameters)
+    model._model
+end
+function visit_get_submodel(model::Model2Fit_Mapped_Parameters,submodel_idx::Int)
+    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
+
+    _visit_get_submodel(model)
+end
+
+function _visit_get_X(model::Model2Fit_Mapped_Parameters,X::AbstractVector)
+    X
+end 
+function visit_get_X(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
+    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
+    @assert length(θ) == parameter_size(model)
+
+    _visit_get_X(model,X)
+end 
+
+function _visit_get_θ(model::Model2Fit_Mapped_Parameters,θ::AbstractVector)
+    @assert length(θ) == parameter_size(model)
+    
+    θ_model_reduced = @view θ[1:(parameter_size(model._model) - length(model._indices))]
+    θ_model_reduced_size = length(θ_model_reduced)
+    
+    θ_map = @view θ[(θ_model_reduced_size+1):end]
+    mapped_elements = eval_x(model._map,model._elements2map, θ_map)
+    
+    insert_some_elements(θ_model_reduced, model._indices,mapped_elements)
+end
+
+function visit_get_θ(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
+    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
+ 
+    _visit_get_θ(model,θ)
+end 
+
+
+# Interface ================
+#
 parameter_size(mp::Model2Fit_Mapped_Parameters) = parameter_size(mp._model) - length(mp._indices) + parameter_size(mp._map)
 
+function accumulate_y!(mp::Model2Fit_Mapped_Parameters,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+    θ_model = _visit_get_θ(mp,θ)
+    model = _visit_get_submodel(mp)
+
+    accumulate_y!(model,Y,X,θ_model)
+end
+
+# Convenience methods ================
+#
 @doc raw"""
 ```julia
 get_model(mp::Model2Fit_Mapped_Parameters) -> Absatrct_Model2Fit
@@ -38,7 +91,7 @@ get_model(mp::Model2Fit_Mapped_Parameters) -> Absatrct_Model2Fit
 
 Get back the wrapped model
 """
-get_model(mp::Model2Fit_Mapped_Parameters) = mp._model
+get_model(mp::Model2Fit_Mapped_Parameters) = _visit_get_submodel(mp)
 
 @doc raw"""
 ```julia
@@ -47,21 +100,4 @@ get_model_θ(mp::Model2Fit_Mapped_Parameters,θ::AbstractVector) -> θ::Abstract
 
 Retrieve the parameter vector θ associated to the wrapped model [`get_model`](@ref).
 """
-function get_model_θ(mp::Model2Fit_Mapped_Parameters,θ::AbstractVector)
-    @assert length(θ) == parameter_size(mp)
-    
-    θ_model_reduced = @view θ[1:(parameter_size(mp._model) - length(mp._indices))]
-    θ_model_reduced_size = length(θ_model_reduced)
-    
-    θ_map = @view θ[(θ_model_reduced_size+1):end]
-    mapped_elements = eval_x(mp._map,mp._elements2map, θ_map)
-    
-    insert_some_elements(θ_model_reduced, mp._indices,mapped_elements)
-end
-
-function accumulate_y!(mp::Model2Fit_Mapped_Parameters,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
-    θ_model = get_model_θ(mp,θ)
-    model = get_model(mp)
-
-    accumulate_y!(model,Y,X,θ_model)
-end
+get_model_θ(mp::Model2Fit_Mapped_Parameters,θ::AbstractVector) = _visit_get_θ(mp,θ)

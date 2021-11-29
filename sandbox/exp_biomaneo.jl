@@ -163,9 +163,6 @@ writedlm("poub.txt",hcat(ROI_spectrum.X,ROI_spectrum.Y,Y_fit,Y_fit_init))
 # ****************************************************************
 solution(result)
 
-# using BenchmarkTools
-# @benchmark NLS_Solver.solve($nls,$θ_init,$bc,$conf)
-
 
 NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
-@assert false
+
