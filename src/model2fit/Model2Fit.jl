@@ -1,6 +1,7 @@
 include("abstract_model2fit.jl")
 include("visit.jl")
 
+include("tagged_model.jl")
 include("empty_model.jl")
 
 include("model_sum.jl")

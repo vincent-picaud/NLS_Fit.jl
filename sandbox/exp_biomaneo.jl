@@ -18,6 +18,12 @@ import NLS_Models: create_model
 #
 # This model is the sum of Isotopic Model contained in the considered group
 #
+# This model is tagged (for the moment by its group idx)
+#
+struct Group_Model_EmbeddedData
+    _group_idx::Int
+end
+
 function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_group::Int)
 
     model = Model2Fit_Empty()
@@ -29,6 +35,8 @@ function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_gr
         model += Peak_Motif(Gaussian_Peak(),get_profile_matrix(isotopic_motif))
     end
 
+    model = Model2Fit_TaggedModel(model,Group_Model_EmbeddedData(idx_group))
+    
     model
 end
 
@@ -74,9 +82,9 @@ end
 
 # Inputs
 # ================
-spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
+# spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
 #spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
-#spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
+spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
 #spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 spectrum.Y ./= maximum(spectrum.Y)
@@ -166,3 +174,6 @@ solution(result)
 
 NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
 
+
+# using BenchmarkTools
+# @benchmark  NLS_Solver.solve($nls,$θ_init,$bc,$conf)
