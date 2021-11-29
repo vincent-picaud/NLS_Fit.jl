@@ -39,31 +39,42 @@ end
 # Visit  ================
 #
 visit_submodel_size(model::Recalibration) = 1
+
+_visit_get_submodel(model::Recalibration) = model._model2calibrate
+
 function visit_get_submodel(model::Recalibration,submodel_idx::Int)
     @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
 
-    model._model2calibrate
+    _visit_get_submodel(model)
 end
 
+function _visit_get_X(model::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
+    @assert length(θ) == parameter_size(model)
+
+    submodel = _visit_get_submodel(model)
+    s=parameter_size(submodel)
+    θ_map = @view θ[(s+1):end]
+    
+    eval_x(model._map, X_hat, θ_map)
+end 
 function visit_get_X(model::Recalibration,submodel_idx::Int,X_hat::AbstractVector,θ::AbstractVector)
     @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
 
-    @assert length(θ) == parameter_size(model)
+    _visit_get_X(model,X_hat,θ)
+end
 
-    s=parameter_size(model._model2calibrate)
-    θ_map = @view θ[(s+1):end]
-
-    eval_x(model._map, X_hat, θ_map)
-end 
-
+function _visit_get_θ(model::Recalibration,θ::AbstractVector)
+    submodel = _visit_get_submodel(model)
+    s=parameter_size(submodel)
+    θ_model = @view θ[1:s]
+end
 function visit_get_θ(model::Recalibration,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
     @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
 
-    s=parameter_size(model._model2calibrate)
-    θ_model = @view θ[1:s]
+    _visit_get_θ(model,θ)
 end
 
-# Public methods ================
+# Interface ================
 #
 parameter_size(m::Recalibration) = parameter_size(m._model2calibrate)+parameter_size(m._map)
 
@@ -77,13 +88,13 @@ the given transformation parameters ``θ``.
 
 """
 function eval_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
-    visit_get_X(m,1,X_hat,θ)
+    _visit_get_X(m,X_hat,θ)
 end
 
 function accumulate_y!(m::Recalibration,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector)
   
-    X_calibrated = visit_get_X(m,1,X_hat,θ)
-    θ_model = visit_get_θ(m,1,X_hat,θ)
+    X_calibrated = _visit_get_X(m,X_hat,θ)
+    θ_model = _visit_get_θ(m,θ)
 
     accumulate_y!(m._model2calibrate,Y,X_calibrated,θ_model)
 end
