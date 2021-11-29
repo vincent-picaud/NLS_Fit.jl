@@ -10,6 +10,12 @@ p(x; θ = [h,μ,σ]) = h e^{-\frac{1}{2} \left(\frac{x-μ}{σ} \right)^2}
 struct Gaussian_Peak <: Abstract_Model2Fit_Peak
 end
 
+# Visit  ================
+#
+visit_submodel_size(model::Gaussian_Peak) = 0
+
+# Interface  ================
+#
 parameter_size(::Gaussian_Peak) = 3
 
 function accumulate_y!(m::Gaussian_Peak,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
@@ -33,6 +39,12 @@ struct Const_μ_Gaussian_Peak{μ_T <: Real} <: Abstract_Model2Fit_Peak
     _μ::μ_T
 end
 
+# Visit  ================
+#
+visit_submodel_size(model::Const_μ_Gaussian_Peak) = 0
+
+# Interface  ================
+#
 parameter_size(::Const_μ_Gaussian_Peak) = 2
 
 function accumulate_y!(m::Const_μ_Gaussian_Peak,Y::AbstractVector,X::AbstractVector,θ::AbstractVector{T}) where {T}
