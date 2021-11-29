@@ -144,6 +144,14 @@ result = NLS_Solver.solve(nls,θ_init,bc,conf)
 # ================
 Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
 
+# Here prepare for local fittings
+# ****************************************************************
+# TODO
+# Compute the calibrated spectrum and keep the model without the
+# recalibration extra-layer
+# -> must implement visit before 
+#recalibrated_spectrum = Spectrum(eval_x,
+
 # save text file, to be used by gnuplot
 #
 # plot "poub.txt" u 1:2 w l
@@ -159,3 +167,5 @@ solution(result)
 # @benchmark NLS_Solver.solve($nls,$θ_init,$bc,$conf)
 
 
+NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
+@assert false
