@@ -174,14 +174,32 @@ solution(result)
 
 NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result))
 
+# Store model,Y,X,θ
+for_local_fit = Vector{Tuple{NLS_Fit.Abstract_Model2Fit,AbstractVector,AbstractVector,AbstractVector}}(undef,0)
+       
 visit(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result)) do model,Y,X,θ
     if model isa Model2Fit_TaggedModel
         if NLS_Fit.get_data(model) isa Group_Model_EmbeddedData
-            println("model type :",typeof(model))
-            println("parameters :",θ)
+            # note: get_mode remove the "taggedmodel" extra layer
+            push!(for_local_fit,(NLS_Fit.get_model(model),Y,X,θ))
             return false
         end
     end
         
     true
+end
+
+function perform_local_fit(for_local_fit)
+    conf = Levenberg_Marquardt_BC_Conf()
+
+    for ((m,Y,X,θ)) in for_local_fit
+        abs_θ = @. max(1,abs(θ))
+        bc = BoundConstraints(θ-0.8* abs_θ,θ+1.2*abs_θ)
+        nls = NLS_ForwardDiff_From_Model2Fit(m,X,Y)
+        result = NLS_Solver.solve(nls,θ,bc,conf)
+
+        println(result)
+    end
 end 
+
+perform_local_fit(for_local_fit)

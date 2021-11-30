@@ -48,6 +48,6 @@ function accumulate_y!(m::Model2Fit_TaggedModel,Y::AbstractVector,X::AbstractVec
     @assert length(θ) == parameter_size(m)
     @assert length(X) == length(Y)
 
-    accumulate_y!(get_model(model),Y,X,θ)
+    accumulate_y!(get_model(m),Y,X,θ)
 end
 
