@@ -43,7 +43,7 @@ The `visit` functionality requires these methods to be defined for each visited 
 There is no need to export these methods.
 
 """
-function visit(mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector,action::Function)
+function visit(action::Function,mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector)
     @assert length(θ) == parameter_size(mp)
     
     continue_exploration = action(mp,X,θ)
@@ -52,10 +52,10 @@ function visit(mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector,actio
         n_submodel = visit_submodel_size(mp)
         for submodel_idx in 1:n_submodel
            
-            visit(visit_get_submodel(mp,submodel_idx),
+            visit(action,
+                  visit_get_submodel(mp,submodel_idx),
                   visit_get_X(mp,submodel_idx,X,θ),
-                  visit_get_θ(mp,submodel_idx,X,θ),
-                  action)
+                  visit_get_θ(mp,submodel_idx,X,θ))
         end
     end
 end
@@ -85,11 +85,10 @@ end
 # Convience methods ================
 #
 function visit_debug(mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector)
-    action = function visit_default_action(m::Abstract_Model2Fit,x::AbstractVector,θ::AbstractVector)
+    visit(mp,X,θ) do m::Abstract_Model2Fit,x::AbstractVector,θ::AbstractVector
         @assert parameter_size(m)==size(θ,1)
         println("model type :",typeof(m))
         println("parameters :",θ)
         true
     end
-    visit(mp,X,θ,action)
 end
