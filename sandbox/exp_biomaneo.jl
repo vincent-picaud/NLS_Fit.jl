@@ -174,3 +174,14 @@ solution(result)
 
 NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result))
 
+visit(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result)) do model,Y,X,θ
+    if model isa Model2Fit_TaggedModel
+        if NLS_Fit.get_data(model) isa Group_Model_EmbeddedData
+            println("model type :",typeof(model))
+            println("parameters :",θ)
+            return false
+        end
+    end
+        
+    true
+end 
