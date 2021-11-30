@@ -152,6 +152,8 @@ result = NLS_Solver.solve(nls,θ_init,bc,conf)
 # ================
 Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
 
+# recalibrated = eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,)
+
 # Here prepare for local fittings
 # ****************************************************************
 # TODO
@@ -181,7 +183,7 @@ visit(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution
     if model isa Model2Fit_TaggedModel
         if NLS_Fit.get_data(model) isa Group_Model_EmbeddedData
             # note: get_mode remove the "taggedmodel" extra layer
-            push!(for_local_fit,(NLS_Fit.get_model(model),Y,X,θ))
+            push!(for_local_fit,(get_tagged_model(model),Y,X,θ))
             return false
         end
     end

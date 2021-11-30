@@ -1,7 +1,7 @@
 # Tag model and embed data
 #
 export Model2Fit_TaggedModel
-export get_data 
+export get_data, get_tagged_model
 
 @doc raw"""
 ```julia
@@ -29,12 +29,12 @@ get_data(m::Model2Fit_TaggedModel{MODEL,DATA)::DATA
 Return embedded data
 """
 get_data(m::Model2Fit_TaggedModel) = m._data
-get_model(m::Model2Fit_TaggedModel) = m._model
+get_tagged_model(m::Model2Fit_TaggedModel) = m._model
 
 # Visit  ================
 #
 visit_submodel_size(model::Model2Fit_TaggedModel) = 1
-visit_get_submodel(model::Model2Fit_TaggedModel,submodel_idx::Int) = get_model(model)
+visit_get_submodel(model::Model2Fit_TaggedModel,submodel_idx::Int) = get_tagged_model(model)
 visit_get_Y(model::Model2Fit_TaggedModel,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = Y
 visit_get_X(model::Model2Fit_TaggedModel,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = X
 visit_get_θ(model::Model2Fit_TaggedModel,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = θ
@@ -48,6 +48,6 @@ function accumulate_y!(m::Model2Fit_TaggedModel,Y::AbstractVector,X::AbstractVec
     @assert length(θ) == parameter_size(m)
     @assert length(X) == length(Y)
 
-    accumulate_y!(get_model(m),Y,X,θ)
+    accumulate_y!(get_tagged_model(m),Y,X,θ)
 end
 
