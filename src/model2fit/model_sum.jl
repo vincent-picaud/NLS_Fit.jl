@@ -32,64 +32,51 @@
 #
 struct Model2Fit_Sum{LEFT_TYPE<:Abstract_Model2Fit,
                      RIGHT_TYPE<:Abstract_Model2Fit} <: Abstract_Model2Fit
-    _left::LEFT_TYPE
-    _right::RIGHT_TYPE
+    _left_right::Tuple{LEFT_TYPE,RIGHT_TYPE}
 end
+
+# Internal
+#
+get_submodel_θ_1(model::Model2Fit_Sum,θ::AbstractVector) = @view θ[1:parameter_size(model._left_right[1])]
+get_submodel_θ_2(model::Model2Fit_Sum,θ::AbstractVector) = @view θ[(parameter_size(model._left_right[1])+1):end]
 
 # Visit  ================
 #
 visit_submodel_size(model::Model2Fit_Sum) = 2
 
-function visit_get_submodel(model::Model2Fit_Sum,submodel_idx::Int)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
+visit_get_submodel(model::Model2Fit_Sum,submodel_idx::Int) = model._left_right[submodel_idx]
+visit_get_Y(model::Model2Fit_Sum,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = Y
+visit_get_X(model::Model2Fit_Sum,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = X
+function visit_get_θ(model::Model2Fit_Sum,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+    @assert submodel_idx==1 || submodel_idx==2
 
     if submodel_idx==1
-        return model._left
+        return get_submodel_θ_1(model,θ)
     end
-
-    # submodel_idx == 2
-    model._right
-end
-
-function visit_get_X(model::Model2Fit_Sum,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-    @assert length(θ) == parameter_size(model)
     
-    X
-end
-
-function visit_get_θ(model::Model2Fit_Sum,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-    @assert length(θ) == parameter_size(model)
-    
-    if submodel_idx==1
-        return @view θ[1:parameter_size(model._left)]
-    end
-
     # submodel_idx == 2
-    @view θ[(parameter_size(model._left)+1):end]
+    get_submodel_θ_2(model,θ)
 end
 
 # Interface  ================
 #
-parameter_size(m::Model2Fit_Sum) =
-    parameter_size(visit_get_submodel(m,1)) +
-    parameter_size(visit_get_submodel(m,2))
+parameter_size(m::Model2Fit_Sum) = parameter_size(m._left_right[1])+ parameter_size(m._left_right[2])
+
 
 function accumulate_y!(m::Model2Fit_Sum,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     @assert length(θ) == parameter_size(m)
-    @assert length(X) == length(Y)
-
-    accumulate_y!(visit_get_submodel(m,1),Y,X,visit_get_θ(m,1,X,θ))
-    accumulate_y!(visit_get_submodel(m,2),Y,X,visit_get_θ(m,2,X,θ))
-
+        @assert length(X) == length(Y)
+    
+    accumulate_y!(m._left_right[1],Y,X,get_submodel_θ_1(m,θ))
+    accumulate_y!(m._left_right[2],Y,X,get_submodel_θ_2(m,θ))
+    
     Y
 end
 
 # Some Base function overloadings  ================
 #
 import Base: (+)
-Base. +(left::Abstract_Model2Fit,right::Abstract_Model2Fit) = Model2Fit_Sum(left,right)
+Base. +(left::Abstract_Model2Fit,right::Abstract_Model2Fit) = Model2Fit_Sum((left,right))
 Base. +(left::Model2Fit_Empty,right::Abstract_Model2Fit) = right
 Base. +(left::Abstract_Model2Fit,right::Model2Fit_Empty) = left
 

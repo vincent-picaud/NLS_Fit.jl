@@ -14,8 +14,6 @@ export visit
 # visit model specializations
 # ================================================================
 #
-
-
 @doc raw"""
 ```julia
 visit(mp::Abstract_Model2Fit,X::AbstractVector,θp::AbstractVector,action::Function) -> nothing
@@ -37,16 +35,23 @@ If the function returns `false` the depth-first-search is stopped.
 The `visit` functionality requires these methods to be defined for each visited model:
 - visit_submodel_size(model)
 - visit_get_submodel(model,submodel_idx)
-- visit_get_X(model,submodel_idx,X,θ)
-- visit_get_θ(model,submodel_idx,X,θ)
+- visit_get_Y(model,submodel_idx,Y,X,θ)
+- visit_get_X(model,submodel_idx,Y,X,θ)
+- visit_get_θ(model,submodel_idx,Y,X,θ)
 
 There is no need to export these methods.
 
+These functions **never** modifies `Y` components, in some cases like
+[`Model2Fit_Stacked`](@ref), `visit_get_Y` returns a view.
 """
-function visit(action::Function,mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector)
+function
+visit(action::Function,mp::Abstract_Model2Fit,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+    # as we perform a sanity check there is no need to repeat it
+    # in all the visit_... functions
     @assert length(θ) == parameter_size(mp)
+    @assert length(X) == length(Y)
     
-    continue_exploration = action(mp,X,θ)
+    continue_exploration = action(mp,Y,X,θ)
     
     if continue_exploration
         n_submodel = visit_submodel_size(mp)
@@ -54,38 +59,17 @@ function visit(action::Function,mp::Abstract_Model2Fit,X::AbstractVector,θ::Abs
            
             visit(action,
                   visit_get_submodel(mp,submodel_idx),
-                  visit_get_X(mp,submodel_idx,X,θ),
-                  visit_get_θ(mp,submodel_idx,X,θ))
+                  visit_get_Y(mp,submodel_idx,Y,X,θ),
+                  visit_get_X(mp,submodel_idx,Y,X,θ),
+                  visit_get_θ(mp,submodel_idx,Y,X,θ))
         end
     end
 end
 
-# Extra comment:
-#
-# Most of the time
-# - visit_submodel_size(model)
-# - visit_get_submodel(model,submodel_idx)
-# - visit_get_X(model,submodel_idx,X,θ)
-# - visit_get_θ(model,submodel_idx,X,θ)
-#
-# do not require all their arguments, by a example if the model has
-# only one submodel and does not modify X, then
-#
-# visit_get_X(model,submodel_idx,X,θ) = X
-#
-# A convention we try to use is to define sibling function, with a _
-# prefix that only use the required arguments:
-#
-# _visit_get_X(model,X) = X
-# visit_get_X(model,submodel_idx,X,θ) = (sanity checks +) _visit_get_X(model,X)
-#
-# typical example: see src/model2fit/mapped_parameters.jl
-#
-
 # Convience methods ================
 #
-function visit_debug(mp::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector)
-    visit(mp,X,θ) do m::Abstract_Model2Fit,x::AbstractVector,θ::AbstractVector
+function visit_debug(mp::Abstract_Model2Fit,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+    visit(mp,Y,X,θ) do m::Abstract_Model2Fit,y::AbstractVector,x::AbstractVector,θ::AbstractVector
         @assert parameter_size(m)==size(θ,1)
         println("model type :",typeof(m))
         println("parameters :",θ)

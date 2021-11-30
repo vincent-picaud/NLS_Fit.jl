@@ -37,48 +37,8 @@ struct Recalibration{MODEL2FIT_TYPE <: Abstract_Model2Fit, MAP_TYPE <: Abstract_
     _map::MAP_TYPE
 end
 
-# Visit  ================
+# Specific methods  ================
 #
-visit_submodel_size(model::Recalibration) = 1
-
-_visit_get_submodel(model::Recalibration) = model._model2calibrate
-
-function visit_get_submodel(model::Recalibration,submodel_idx::Int)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-
-    _visit_get_submodel(model)
-end
-
-function _visit_get_X(model::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
-    @assert length(θ) == parameter_size(model)
-
-    submodel = _visit_get_submodel(model)
-    s=parameter_size(submodel)
-    θ_map = @view θ[(s+1):end]
-    
-    eval_x(model._map, X_hat, θ_map)
-end 
-function visit_get_X(model::Recalibration,submodel_idx::Int,X_hat::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-
-    _visit_get_X(model,X_hat,θ)
-end
-
-function _visit_get_θ(model::Recalibration,θ::AbstractVector)
-    submodel = _visit_get_submodel(model)
-    s=parameter_size(submodel)
-    θ_model = @view θ[1:s]
-end
-function visit_get_θ(model::Recalibration,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-
-    _visit_get_θ(model,θ)
-end
-
-# Interface ================
-#
-parameter_size(m::Recalibration) = parameter_size(m._model2calibrate)+parameter_size(m._map)
-
 @doc raw"""
 ```julia
 eval_calibrated_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector) -> AbstractVector
@@ -88,15 +48,43 @@ Compute the calibrated ``X`` from the reference domain ``\hat{X}`` for
 the given transformation parameters ``θ``.
 
 """
-function eval_calibrated_x(m::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
-    _visit_get_X(m,X_hat,θ)
+function eval_calibrated_x(model::Recalibration,X_hat::AbstractVector,θ::AbstractVector)
+    submodel = model._model2calibrate
+    s=parameter_size(submodel)
+    θ_map = @view θ[(s+1):end]
+    
+    eval_x(model._map, X_hat, θ_map)
 end
+
+get_submodel(model::Recalibration) = model._model2calibrate
+get_map(model::Recalibration) = model._map
+
+function get_submodel_θ(model::Recalibration,θ::AbstractVector)
+    submodel = get_submodel(model)
+    s=parameter_size(submodel)
+    θ_model = @view θ[1:s]
+end
+
+# Visit  ================
+#
+visit_submodel_size(model::Recalibration) = 1
+
+visit_get_submodel(model::Recalibration,submodel_idx::Int) = get_submodel(model)
+visit_get_Y(model::Recalibration,submodel_idx::Int,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector) = Y
+visit_get_X(model::Recalibration,submodel_idx::Int,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector) = eval_calibrated_x(model,X_hat,θ)
+visit_get_θ(model::Recalibration,submodel_idx::Int,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector) = get_submodel_θ(model,θ)
+
+
+# Interface ================
+#
+parameter_size(m::Recalibration) = parameter_size(get_submodel(m))+parameter_size(get_map(m))
 
 function accumulate_y!(m::Recalibration,Y::AbstractVector,X_hat::AbstractVector,θ::AbstractVector)
   
-    X_calibrated = _visit_get_X(m,X_hat,θ)
-    θ_model = _visit_get_θ(m,θ)
+    X_calibrated = eval_calibrated_x(m,X_hat,θ)
+    submodel = get_submodel(m)
+    submodel_θ = get_submodel_θ(m,θ)
 
-    accumulate_y!(m._model2calibrate,Y,X_calibrated,θ_model)
+    accumulate_y!(submodel,Y,X_calibrated,submodel_θ)
 end
 

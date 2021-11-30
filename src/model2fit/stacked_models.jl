@@ -65,53 +65,32 @@ struct Model2Fit_Stacked{MODEL2FIT<:Abstract_Model2Fit} <: Abstract_Model2Fit
     end
 end 
 
+# Helper  ================
+#
+_get_XY(model::Model2Fit_Stacked,submodel_idx::Int,XY::AbstractVector) = @view XY[model._X_ranges[submodel_idx]]
+_get_θ(model::Model2Fit_Stacked,submodel_idx::Int,θ::AbstractVector) = @view θ[model._θ_ranges[submodel_idx]]
+
 # Visit  ================
 #
 visit_submodel_size(model::Model2Fit_Stacked) = length(model._models)
 
-function visit_get_submodel(model::Model2Fit_Stacked,submodel_idx::Int)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-
-    model._models[submodel_idx]
-end
-
-function _visit_get_X(model::Model2Fit_Stacked,submodel_idx::Int,X::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-    @assert length(X) == last(last(model._X_ranges))
-
-    @view X[model._X_ranges[submodel_idx]]
-end 
-function visit_get_X(model::Model2Fit_Stacked,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert length(θ) == last(last(model._θ_ranges))
-    
-    _visit_get_X(model,submodel_idx,X)
-end
-
-function _visit_get_θ(model::Model2Fit_Stacked,submodel_idx::Int,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-    @assert length(θ) == last(last(model._θ_ranges))
-
-    @view θ[model._θ_ranges[submodel_idx]]
-end
-function visit_get_θ(model::Model2Fit_Stacked,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-    @assert length(X) == last(last(model._X_ranges))
-
-    _visit_get_θ(model,submodel_idx, θ)
-end
+visit_get_submodel(model::Model2Fit_Stacked,submodel_idx::Int) = model._models[submodel_idx]
+visit_get_Y(model::Model2Fit_Stacked,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = _get_XY(model,submodel_idx,Y)
+visit_get_X(model::Model2Fit_Stacked,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = _get_XY(model,submodel_idx,X)
+visit_get_θ(model::Model2Fit_Stacked,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = _get_θ(model,submodel_idx,θ)
 
 # Interface ================
 #
 parameter_size(m::Model2Fit_Stacked) = last(last(m._θ_ranges))
 
-function accumulate_y!(m::Model2Fit_Stacked,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
-    n_submodel = visit_submodel_size(m)
+function accumulate_y!(model::Model2Fit_Stacked,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+    n_submodel = visit_submodel_size(model)
 
     for i in 1:n_submodel
-        submodel = visit_get_submodel(m,i)
-        subX = _visit_get_X(m,i,X)
-        subY = _visit_get_X(m,i,Y)
-        subθ = _visit_get_θ(m,i,θ)
+        submodel = visit_get_submodel(model,i)
+        subY = _get_XY(model,i,Y)
+        subX = _get_XY(model,i,X)
+        subθ = _get_θ(model,i,θ)
 
         accumulate_y!(submodel,subY,subX,subθ)
     end 

@@ -45,16 +45,18 @@ end
 function _visit_get_X(model::Model2Fit_Mapped_Parameters,X::AbstractVector)
     X
 end 
-function visit_get_X(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
-    @assert length(θ) == parameter_size(model)
-
+function visit_get_X(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     _visit_get_X(model,X)
+end
+
+function _visit_get_Y(model::Model2Fit_Mapped_Parameters,Y::AbstractVector)
+    Y
+end 
+function visit_get_Y(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
+    _visit_get_Y(model,Y)
 end 
 
 function _visit_get_θ(model::Model2Fit_Mapped_Parameters,θ::AbstractVector)
-    @assert length(θ) == parameter_size(model)
-    
     θ_model_reduced = @view θ[1:(parameter_size(model._model) - length(model._indices))]
     θ_model_reduced_size = length(θ_model_reduced)
     
@@ -64,9 +66,7 @@ function _visit_get_θ(model::Model2Fit_Mapped_Parameters,θ::AbstractVector)
     insert_some_elements(θ_model_reduced, model._indices,mapped_elements)
 end
 
-function visit_get_θ(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,X::AbstractVector,θ::AbstractVector)
-    @assert 1 ≤ submodel_idx ≤ visit_submodel_size(model)
- 
+function visit_get_θ(model::Model2Fit_Mapped_Parameters,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector)
     _visit_get_θ(model,θ)
 end 
 

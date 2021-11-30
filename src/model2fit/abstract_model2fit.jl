@@ -16,8 +16,9 @@ abstract type Abstract_Model2Fit end
 #
 visit_submodel_size(model::Abstract_Model2Fit) = @assert(false,"To implement for $(typeof(model)) type!")
 visit_get_submodel(model::Abstract_Model2Fit,submodel_idx::Int) = @assert(false,"To implement for $(typeof(model)) type!")
-visit_get_X(model::Abstract_Model2Fit,submodel_idx::Int,X::AbstractVector,θ::AbstractVector) = @assert(false,"To implement for $(typeof(model)) type!")
-visit_get_θ(model::Abstract_Model2Fit,submodel_idx::Int,X::AbstractVector,θ::AbstractVector) = @assert(false,"To implement for $(typeof(model)) type!")
+visit_get_Y(model::Abstract_Model2Fit,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = @assert(false,"To implement for $(typeof(model)) type!")
+visit_get_X(model::Abstract_Model2Fit,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = @assert(false,"To implement for $(typeof(model)) type!")
+visit_get_θ(model::Abstract_Model2Fit,submodel_idx::Int,Y::AbstractVector,X::AbstractVector,θ::AbstractVector) = @assert(false,"To implement for $(typeof(model)) type!")
 
 # Public functions ================
 #
