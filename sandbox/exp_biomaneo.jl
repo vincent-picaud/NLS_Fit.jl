@@ -1,9 +1,10 @@
-# Cet exemple est complex
+# TODO:
+# - get_tagged_model_type & data_type
+# - isomotif tag -> get local number
+# - add gnuplot bar + name
+# - perform local fit
+# - replot
 #
-# Il faut empiler les modèles en fonction des ROI Mais comme la
-# fonction de calibration dépend d'un X = 1:N entier, il faut
-# *anticiper* prévoir le même découpage pour cet X entier
-
 using Revise
 using NLS_Fit
 using NLS_Solver
@@ -36,7 +37,7 @@ function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_gr
     end
 
     model = Model2Fit_TaggedModel(model,Group_Model_EmbeddedData(idx_group))
-    
+   
     model
 end
 
@@ -235,36 +236,35 @@ function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicM
     collected_model_per_group = Vector{LocalFit}(undef,0)
     
     visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
-              # filter model
-              if model isa Model2Fit_TaggedModel
-                  if NLS_Fit.get_data(model) isa Group_Model_EmbeddedData
-                      # process local model 
-                      data = NLS_Fit.get_data(model)
-                      model = get_tagged_model(model)
-                      
-                      # extract the right ROIs: compared to our
-                      # initial ROI_spectrum, the recalibration
-                      # procedure may have changed ROI range when
-                      # computed from calibrates_spectrum
-                      group_idx = data._group_idx
-                      group_interval = group_support_as_interval(grouped,group_idx)
-                      group_range =  create_range_from_interval(group_interval,calibrated_spectrum.X)
-                      ROI_calibrated_spectrum = calibrated_spectrum[group_range] # TODO: implement spectrum view
-
-                      # store the result
-                      #
-                      push!(collected_model_per_group,
-                            LocalFit(data = data,
-                                     model = model,
-                                     ROI_calibrated_spectrum = ROI_calibrated_spectrum,
-                                     θ=θ))
-                      return false
-                  end
-              end
-              
-              true
-          end
-
+        # filter model
+        #
+        if get_tagged_data_type(model) === Group_Model_EmbeddedData
+            # process local model 
+            data = NLS_Fit.get_data(model)
+            model = get_tagged_model(model)
+            
+            # extract the right ROIs: compared to our
+            # initial ROI_spectrum, the recalibration
+            # procedure may have changed ROI range when
+            # computed from calibrates_spectrum
+            group_idx = data._group_idx
+            group_interval = group_support_as_interval(grouped,group_idx)
+            group_range =  create_range_from_interval(group_interval,calibrated_spectrum.X)
+            ROI_calibrated_spectrum = calibrated_spectrum[group_range] # TODO: implement spectrum view
+            
+            # store the result
+            #
+            push!(collected_model_per_group,
+                  LocalFit(data = data,
+                           model = model,
+                           ROI_calibrated_spectrum = ROI_calibrated_spectrum,
+                           θ=θ))
+            return false
+        end
+        
+        true
+    end
+    
     collected_model_per_group
 end
 
