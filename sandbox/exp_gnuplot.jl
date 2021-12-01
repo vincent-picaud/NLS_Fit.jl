@@ -1,4 +1,5 @@
 using DelimitedFiles
+using NLS_Models # for spectrum
 
 const RegisteredData_UUID = typeof(hash(1))
 
@@ -37,6 +38,12 @@ function register_data!(gp::GnuplotScript,data::AbstractVecOrMat;
 
     uuid
 end
+
+function register_data!(gp::GnuplotScript,data::Spectrum;
+                        copy_data::Bool=true)::RegisteredData_UUID
+    register_data!(gp,hcat(data.X,data.Y),copy_data=copy_data)
+end
+
 
 function plot!(gp::GnuplotScript,uuid::RegisteredData_UUID,plot_arg::String)
     @assert is_registered(gp,uuid)
