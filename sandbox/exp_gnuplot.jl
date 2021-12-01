@@ -60,6 +60,17 @@ function replot!(gp::GnuplotScript,uuid::RegisteredData_UUID,plot_arg::String)
     plot!(gp,uuid,plot_arg)
 end
 
+# vertical ----------------
+#
+function add_vertical_line!(gp::GnuplotScript,position::Float64;name::Union{AbstractString,Nothing})
+    if name != Nothing
+        gp._script  *= "set label at $position, 0.0 '$name' rotate by 90 front left offset -1,1,0 tc ls 1\n"
+    end
+    gp._script *= "set arrow from $position, graph 0 to $position, graph 1 nohead front\n"
+
+    gp
+end
+
 # ================
 
 function write_data(io::IO,gp::GnuplotScript)
@@ -72,7 +83,9 @@ end
 function write(script_file::String,gp::GnuplotScript)
     io = open(script_file, "w");
     write_data(io,gp)
-    print(io,gp._script)
+    println(io,gp._script)
+    # add a final replot to be sure that everything is plotted
+    println(io,"replot")
     close(io)
 end
     
@@ -81,10 +94,12 @@ end
 # ****************************************************************
 gp = GnuplotScript()
 
-id_1 = register_data!(gp,rand(5))
-id_2 = register_data!(gp,rand(5,2))
+id_1 = register_data!(gp,10*rand(5))
+id_2 = register_data!(gp,10*rand(5,2))
 
 gp = plot!(gp,id_1,"u 1 w l")
 gp = replot!(gp,id_2,"u 1:2 w l")
+gp = add_vertical_line!(gp,5.0,name="toto")
+gp = add_vertical_line!(gp,2.0,name="titititito")
 
 write("demo.gp",gp)
