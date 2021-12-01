@@ -15,13 +15,18 @@ using DelimitedFiles
 
 import NLS_Models: create_model
 
-# Create the model associated to one group
+# Used to tag isotopic motif within group
+#
+struct EmbeddedData_IsotopicMotif_Model
+    _group_idx::Int
+    _local_idx::Int
+end
+
+# Used to tag a complete group model
 #
 # This model is the sum of Isotopic Model contained in the considered group
 #
-# This model is tagged (for the moment by its group idx)
-#
-struct Group_Model_EmbeddedData
+struct EmbeddedData_Group_Model
     _group_idx::Int
 end
 
@@ -33,10 +38,12 @@ function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_gr
     for idx_isotopicmotif in 1:n_isotopicmotif
         isotopic_motif = get_object(grouped,idx_group,idx_isotopicmotif)
 
-        model += Peak_Motif(Gaussian_Peak(),get_profile_matrix(isotopic_motif))
+        
+        model += Model2Fit_TaggedModel(Peak_Motif(Gaussian_Peak(),get_profile_matrix(isotopic_motif)),
+                                       EmbeddedData_IsotopicMotif_Model(idx_group,idx_isotopicmotif))
     end
 
-    model = Model2Fit_TaggedModel(model,Group_Model_EmbeddedData(idx_group))
+    model = Model2Fit_TaggedModel(model,EmbeddedData_Group_Model(idx_group))
    
     model
 end
@@ -183,7 +190,7 @@ NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spect
 # (by example we need grouped or calibrated spectrum to extract useful information)
 #
 Base.@kwdef struct LocalFit
-    data::Group_Model_EmbeddedData
+    data::EmbeddedData_Group_Model
     model::NLS_Fit.Abstract_Model2Fit
     ROI_calibrated_spectrum::Spectrum # CAVEAT: do not replace by
                                       # range, as this allows us to
@@ -211,11 +218,41 @@ function get_model_parameter(gfr::GlobalFitResult,idx::Int)
     gfr.local_fit[idx].θ
 end 
 
+function get_group_idx(gfr::GlobalFitResult,idx::Int)
+    # often idx = group_idx but this two indices are different (by
+    # example if there are fewer ROI model than group)
+    #
+    gfr.local_fit[idx].data._group_idx
+end
+
 # Give the number of isotopic motifs in ROI idx
 function get_isotopicmotif_count(gfr::GlobalFitResult,idx::Int)
-    objects_in_group_size(gfr.grouped,gfr.local_fit[idx].data._group_idx)
+
+    group_idx = get_group_idx(gfr,idx)
+
+    objects_in_group_size(gfr.grouped,group_idx)
 end 
-    
+
+# Return isotopicmotif name
+function get_isotopicmotif_name(gfr::GlobalFitResult,idx::Int,local_idx::Int)
+
+    group_idx = get_group_idx(gfr,idx)
+
+    object = get_object(gfr.grouped,group_idx,local_idx)
+
+    get_name(object)
+end
+
+# Return isotopicmotif position
+function get_isotopicmotif_position(gfr::GlobalFitResult,idx::Int,local_idx::Int)
+
+    group_idx = get_group_idx(gfr,idx)
+
+    object = get_object(gfr.grouped,group_idx,local_idx)
+
+    get_position(object)
+end
+
 # Extract fit result, grouping model per group and providing the right X,Y (after calibration)
 #
 # caveat: vector index has no reason to be the group index. The right
@@ -223,7 +260,7 @@ end
 #
 # Model associated to each group is detected thanks to
 #
-#   Model2Fit_TaggedModel{ _ , Group_Model_EmbeddedData}
+#   Model2Fit_TaggedModel{ _ , EmbeddedData_Group_Model}
 #
 # type checking
 #
@@ -238,7 +275,7 @@ function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicM
     visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
         # filter model
         #
-        if get_tagged_data_type(model) === Group_Model_EmbeddedData
+        if get_tagged_data_type(model) === EmbeddedData_Group_Model
             # process local model 
             data  = get_tagged_data(model)
             model = get_tagged_model(model)
@@ -341,18 +378,30 @@ function plot_fit(global_fit_result::GlobalFitResult)
         if get_isotopicmotif_count(global_fit_result,idx_ROI) > 1
             ROI_Y_fit = eval_y(ROI_model,ROI_spectrum.X,ROI_model_parameter)
             ROI_id = register_data!(gp,hcat(ROI_spectrum.X,ROI_Y_fit))
-            replot!(gp,ROI_id,"u 1:2 w l lw 2 dt 3 lc 'blue' notitle")
+            replot!(gp,ROI_id,"u 1:2 w l lw 2 dt 3 lc rgb 'blue' notitle")
         end
         
         # like there are potentially several isotopic motifs per ROI,
         # we use the visit method to perform individual drawings
         #
         visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
-            if m isa Peak_Motif
-                Y_fit = eval_y(m,X,θ)
-                motif_id = register_data!(gp,hcat(X,Y_fit))
-                replot!(gp,motif_id,"u 1:2 w l notitle")
+            if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
+                # get isotopic name & position using tagged data
+                #
+                embedded_data = get_tagged_data(m)
+                name = get_isotopicmotif_name(global_fit_result,embedded_data._group_idx,embedded_data._local_idx)
+                position = get_isotopicmotif_position(global_fit_result,embedded_data._group_idx,embedded_data._local_idx)
 
+                # compute and plot model Y value
+                #
+                Y_fit = eval_y(m,X,θ)
+                motif_id = register_data!(gp,hcat(X,Y_fit)) 
+                replot!(gp,motif_id,"u 1:2 w l t '$name'")
+
+                # plot the vertical 
+                #
+                add_vertical_line!(gp,position,name=name)
+                
                 return false
             end
             true
