@@ -1,7 +1,8 @@
 # Tag model and embed data
 #
 export Model2Fit_TaggedModel
-export get_data, get_tagged_model
+export get_data, get_tagged_model # TODO rename get_data -> get_tagged_data
+export get_tagged_data_type, get_tagged_model_type
 
 @doc raw"""
 ```julia
@@ -13,6 +14,8 @@ Tag model and embed data
 # Extra method
 
 - [`get_data`](@ref) 
+- [`get_tagged_model`](@ref) 
+- [`get_tagged_data_type`](@ref) 
 """
 struct Model2Fit_TaggedModel{MODEL<:Abstract_Model2Fit,DATA} <: Abstract_Model2Fit
     _model::MODEL
@@ -30,6 +33,30 @@ Return embedded data
 """
 get_data(m::Model2Fit_TaggedModel) = m._data
 get_tagged_model(m::Model2Fit_TaggedModel) = m._model
+
+@doc raw"""
+```julia
+get_tagged_data_type(m::Abstract_Model2Fit)::DataType
+```
+
+Return embedded data type, or `Nothing` if m is not a
+[`Model2Fit_TaggedModel`](@ref).
+"""
+get_tagged_data_type(m::Abstract_Model2Fit) = Nothing
+get_tagged_data_type(m::Model2Fit_TaggedModel{MODEL,DATA}) where {MODEL<:Abstract_Model2Fit,DATA} = DATA
+
+
+@doc raw"""
+```julia
+get_tagged_model_type(m::Abstract_Model2Fit)::DataType
+```
+
+Return wrapped model type, or `Nothing` if m is not a
+[`Model2Fit_TaggedModel`](@ref).
+"""
+get_tagged_model_type(m::Abstract_Model2Fit) = Nothing
+get_tagged_model_type(m::Model2Fit_TaggedModel{MODEL,DATA}) where {MODEL<:Abstract_Model2Fit,DATA} = MODEL
+
 
 # Visit  ================
 #
