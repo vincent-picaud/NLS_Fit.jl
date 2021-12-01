@@ -1,7 +1,7 @@
 # Tag model and embed data
 #
 export Model2Fit_TaggedModel
-export get_data, get_tagged_model # TODO rename get_data -> get_tagged_data
+export get_tagged_data, get_tagged_model
 export get_tagged_data_type, get_tagged_model_type
 
 @doc raw"""
@@ -13,7 +13,7 @@ Tag model and embed data
 
 # Extra method
 
-- [`get_data`](@ref) 
+- [`get_tagged_data`](@ref) 
 - [`get_tagged_model`](@ref) 
 - [`get_tagged_data_type`](@ref) 
 """
@@ -26,12 +26,12 @@ end
 #
 @doc raw"""
 ```julia
-get_data(m::Model2Fit_TaggedModel{MODEL,DATA)::DATA
+get_tagged_data(m::Model2Fit_TaggedModel{MODEL,DATA)::DATA
 ```
 
 Return embedded data
 """
-get_data(m::Model2Fit_TaggedModel) = m._data
+get_tagged_data(m::Model2Fit_TaggedModel) = m._data
 get_tagged_model(m::Model2Fit_TaggedModel) = m._model
 
 @doc raw"""

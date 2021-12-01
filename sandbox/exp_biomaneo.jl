@@ -240,7 +240,7 @@ function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicM
         #
         if get_tagged_data_type(model) === Group_Model_EmbeddedData
             # process local model 
-            data = NLS_Fit.get_data(model)
+            data  = get_tagged_data(model)
             model = get_tagged_model(model)
             
             # extract the right ROIs: compared to our
