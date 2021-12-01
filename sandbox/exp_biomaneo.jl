@@ -82,21 +82,21 @@ end
 
 # Inputs
 # ================
-# spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
-#spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
-spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
-#spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
-#spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
-spectrum.Y ./= maximum(spectrum.Y)
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
+raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
+raw_spectrum.Y ./= maximum(raw_spectrum.Y)
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 
 # Remove baseline
 # ================
-Y_baseline = compute_baseline_snip(spectrum,
+Y_baseline = compute_baseline_snip(raw_spectrum,
                                    snip_halfwindow = 60,
                                    smoothing_halfwindow = 20)
 
-spectrum = spectrum - Y_baseline
+spectrum = raw_spectrum - Y_baseline
 
 # Create ROI model & spectrum
 # ================
@@ -152,7 +152,9 @@ result = NLS_Solver.solve(nls,θ_init,bc,conf)
 # ================
 Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
 
-# recalibrated = eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,)
+recalibrated_spectrum = Spectrum(eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,solution(result)),spectrum.Y)
+
+writedlm("poub_calibration.txt",hcat(spectrum.X,recalibrated_spectrum.X))
 
 # Here prepare for local fittings
 # ****************************************************************
@@ -176,32 +178,113 @@ solution(result)
 
 NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result))
 
-# Store model,Y,X,θ
-for_local_fit = Vector{Tuple{NLS_Fit.Abstract_Model2Fit,AbstractVector,AbstractVector,AbstractVector}}(undef,0)
-       
-visit(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result)) do model,Y,X,θ
-    if model isa Model2Fit_TaggedModel
-        if NLS_Fit.get_data(model) isa Group_Model_EmbeddedData
-            # note: get_mode remove the "taggedmodel" extra layer
-            push!(for_local_fit,(get_tagged_model(model),Y,X,θ))
-            return false
-        end
-    end
-        
-    true
+# This is an temporary storage
+Base.@kwdef struct LocalFit
+    data::Group_Model_EmbeddedData
+    model::NLS_Fit.Abstract_Model2Fit
+    ROI_calibrated_spectrum::Spectrum
+    θ::AbstractVector
 end
 
-function perform_local_fit(for_local_fit)
-    conf = Levenberg_Marquardt_BC_Conf()
+# Extract fit result, grouping model per group and providing the right X,Y (after calibration)
+#
+# caveat: vector index has no reason to be the group index. The right
+# way to get the group idx is to use data field.
+#
+# Model associated to each group is detected thanks to
+#
+#   Model2Fit_TaggedModel{ _ , Group_Model_EmbeddedData}
+#
+# type checking
+#
+function extract_fit_result_per_group_calibrated(grouped::GroupedBySupport, # not necessary Isotopic... as we only use interval
+                                                 global_model::NLS_Fit.Abstract_Model2Fit,
+                                                 ROI_spectrum::Spectrum,
+                                                 θ_fit::AbstractVector,
+                                                 calibrated_spectrum::Spectrum)
+    
+    collected_model_per_group = Vector{LocalFit}(undef,0)
+    
+    visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
+              # filter model
+              if model isa Model2Fit_TaggedModel
+                  if NLS_Fit.get_data(model) isa Group_Model_EmbeddedData
+                      # process local model 
+                      data = NLS_Fit.get_data(model)
+                      model = get_tagged_model(model)
+                      
+                      # extract the right ROIs: compared to our
+                      # initial ROI_spectrum, the recalibration
+                      # procedure may have changed ROI range when
+                      # computed from calibrates_spectrum
+                      group_idx = data._group_idx
+                      group_interval = group_support_as_interval(grouped,group_idx)
+                      group_range =  create_range_from_interval(group_interval,calibrated_spectrum.X)
+                      ROI_calibrated_spectrum = calibrated_spectrum[group_range] # TODO: implement spectrum view
 
-    for ((m,Y,X,θ)) in for_local_fit
-        abs_θ = @. max(1,abs(θ))
-        bc = BoundConstraints(θ-0.8* abs_θ,θ+1.2*abs_θ)
-        nls = NLS_ForwardDiff_From_Model2Fit(m,X,Y)
-        result = NLS_Solver.solve(nls,θ,bc,conf)
+                      # store the result
+                      #
+                      push!(collected_model_per_group,
+                            LocalFit(data = data,
+                                     model = model,
+                                     ROI_calibrated_spectrum = ROI_calibrated_spectrum,
+                                     θ=θ))
+                      return false
+                  end
+              end
+              
+              true
+          end
 
-        println(result)
-    end
+    collected_model_per_group
+end
+
+# A wrapper that perform calibration before calling
+#
+#    extract_fit_result_per_group_calibrated(...)
+#
+function extract_fit_result_per_group(grouped::GroupedBySupport, # not necessary Isotopic... as we only use interval
+                                      global_model::Recalibration,
+                                      ROI_spectrum::Spectrum,
+                                      θ_fit::AbstractVector,
+                                      uncalibrated_spectrum::Spectrum)
+
+    # Perform calibration and remove calbibration model
+    #
+    calibrated_X = eval_calibrated_x(global_model,uncalibrated_spectrum.X,θ_fit)
+    global_model_after_calibration = get_calibrated_model(global_model)
+    global_model_after_calibration_θ_fit = get_calibrated_model_θ(global_model,θ_fit)
+    
+    calibrated_spectrum = Spectrum(calibrated_X,spectrum.Y)
+
+    # Continue to process each group model
+    #
+    extract_fit_result_per_group_calibrated(grouped,
+                                            global_model_after_calibration,
+                                            ROI_spectrum,
+                                            global_model_after_calibration_θ_fit,
+                                            calibrated_spectrum)
+    
 end 
 
-perform_local_fit(for_local_fit)
+
+extract_fit_result_per_group(grouped,
+                             stacked_models_σ_law_recalibration,
+                             ROI_spectrum,
+                             solution(result),
+                             spectrum)
+
+# function perform_local_fit(for_local_fit)
+#     conf = Levenberg_Marquardt_BC_Conf()
+
+#     for ((m,Y,X,θ)) in for_local_fit
+#         abs_θ = @. max(1,abs(θ))
+#         bc = BoundConstraints(θ-0.8* abs_θ,θ+1.2*abs_θ)
+#         nls = NLS_ForwardDiff_From_Model2Fit(m,X,Y)
+#         result = NLS_Solver.solve(nls,θ,bc,conf)
+
+#         println(result)
+#     end
+# end 
+
+#nperform_local_fit(for_local_fit)
