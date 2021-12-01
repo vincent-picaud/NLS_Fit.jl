@@ -184,7 +184,9 @@ NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spect
 Base.@kwdef struct LocalFit
     data::Group_Model_EmbeddedData
     model::NLS_Fit.Abstract_Model2Fit
-    ROI_calibrated_spectrum::Spectrum # TODO: replace by range
+    ROI_calibrated_spectrum::Spectrum # CAVEAT: do not replace by
+                                      # range, as this allows us to
+                                      # use local recalibration
     θ::AbstractVector
 end
 
