@@ -83,9 +83,9 @@ end
 # Inputs
 # ================
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
+raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
-raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 raw_spectrum.Y ./= maximum(raw_spectrum.Y)
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
@@ -208,6 +208,11 @@ function get_model_parameter(gfr::GlobalFitResult,idx::Int)
     gfr.local_fit[idx].θ
 end 
 
+# Give the number of isotopic motifs in ROI idx
+function get_isotopicmotif_count(gfr::GlobalFitResult,idx::Int)
+    objects_in_group_size(gfr.grouped,gfr.local_fit[idx].data._group_idx)
+end 
+    
 # Extract fit result, grouping model per group and providing the right X,Y (after calibration)
 #
 # caveat: vector index has no reason to be the group index. The right
@@ -325,12 +330,21 @@ function plot_fit(global_fit_result::GlobalFitResult)
     # Plot fit result
     #
     for idx_ROI in 1:n_ROI
-        # like there are potentially several isotopic motifs per ROI,
-        # we use the visit method to perform individual drawings
-        #
         ROI_spectrum = get_spectrum(global_fit_result,idx_ROI)
         ROI_model = get_model(global_fit_result,idx_ROI)
         ROI_model_parameter = get_model_parameter(global_fit_result,idx_ROI)
+
+        # ROI fit (only plot this is there are overlapping isotopicmotif)
+        #
+        if get_isotopicmotif_count(global_fit_result,idx_ROI) > 1
+            ROI_Y_fit = eval_y(ROI_model,ROI_spectrum.X,ROI_model_parameter)
+            ROI_id = register_data!(gp,hcat(ROI_spectrum.X,ROI_Y_fit))
+            replot!(gp,ROI_id,"u 1:2 w l lw 2 dt 3 lc 'blue' notitle")
+        end
+        
+        # like there are potentially several isotopic motifs per ROI,
+        # we use the visit method to perform individual drawings
+        #
         visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
             if m isa Peak_Motif
                 Y_fit = eval_y(m,X,θ)
