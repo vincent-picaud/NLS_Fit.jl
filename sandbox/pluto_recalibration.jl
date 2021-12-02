@@ -52,7 +52,7 @@ Complete the previous model with a parameterized transformation used as calibrat
 # ╔═╡ 5ceea856-87f0-4874-860d-57cf1f31c5e8
 begin
 	recal_map = Map_Affine_Monotonic(X[1],X[end])
-	recal_model = Recalibration(model,recal_map)
+	recal_model = Model2Fit_Recalibration(model,recal_map)
 
 	θc = Float64[1,0]
 	θ_init_recal_model = vcat(θ_init_model, θc)

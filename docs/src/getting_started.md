@@ -124,7 +124,7 @@ Then this model is complete with a parameterized transformation. Here we use a [
 
 ```@example session
 recalibration_map = Map_Affine_Monotonic(X[1],X[end])
-recalibration_model = Recalibration(model,recalibration_map)
+recalibration_model = Model2Fit_Recalibration(model,recalibration_map)
 	
 θ_map = Float64[1,1]
 θ_init_recalibration_model = vcat(θ_uncalibrated_model, θ_map)
@@ -442,7 +442,7 @@ X = XY[:,1] # hide
 Y = XY[:,2] # hide
 
 recalibration_map = Map_Affine_Monotonic(X[1],X[end])
-model_with_σ_law_and_recal = Recalibration(model_with_σ_law,recalibration_map)
+model_with_σ_law_and_recal = Model2Fit_Recalibration(model_with_σ_law,recalibration_map)
 
 θ_map = Float64[1,1]
 θ_model_with_σ_law_and_recal = vcat(θ_model_with_σ_law, θ_map)

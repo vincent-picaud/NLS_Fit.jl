@@ -33,7 +33,7 @@ model_with_σ_law = Model2Fit_Mapped_Parameters(model,map_pos2sigma,σ_indices,r
 
 # Create a recalibration model
 recalibration_map = Map_Affine_Monotonic(X[1],X[end])
-model_with_σ_law_and_recal = Recalibration(model_with_σ_law,recalibration_map)
+model_with_σ_law_and_recal = Model2Fit_Recalibration(model_with_σ_law,recalibration_map)
 
 θ_map = Float64[1,1]
 θ_model_with_σ_law_and_recal = vcat(θ_model_with_σ_law, θ_map)
