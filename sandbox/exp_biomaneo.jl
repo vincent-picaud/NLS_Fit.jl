@@ -1,10 +1,3 @@
-# TODO:
-# - get_tagged_model_type & data_type
-# - isomotif tag -> get local number
-# - add gnuplot bar + name
-# - perform local fit
-# - replot
-#
 using Revise
 using NLS_Fit
 using NLS_Solver
@@ -94,13 +87,13 @@ end
 
 # not ok
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt")
-raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
+#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
 
 
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
+ raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 
 raw_spectrum.Y ./= maximum(raw_spectrum.Y)
@@ -145,7 +138,7 @@ stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,
 # Add affine calibration
 # ================
 recalibration_map = Map_Affine_Monotonic(ROI_spectrum.X[1],ROI_spectrum.X[end])
-stacked_models_σ_law_recalibration = Recalibration(stacked_models_σ_law,recalibration_map)
+stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law,recalibration_map)
 
 # Initialize θ
 # ================
@@ -178,7 +171,7 @@ Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(resul
 
 recalibrated_spectrum = Spectrum(eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,solution(result)),spectrum.Y)
 
-writedlm("poub_calibration.txt",hcat(spectrum.X,recalibrated_spectrum.X))
+writedlm("poub_calibration.txt",hcat(spectrum.X,recalibrated_spectrum.X,spectrum.Y))
 
 # Here prepare for local fittings
 # ****************************************************************
@@ -213,6 +206,18 @@ Base.@kwdef struct LocalFit
                                       # use local recalibration
     θ::AbstractVector
 end
+
+# Allows model modification, see:
+#     add_calibration_shift()
+# for instance.
+function update_model(lf::LocalFit,new_model::NLS_Fit.Abstract_Model2Fit,new_θ::AbstractVector)
+    @assert NLS_Fit.parameter_size(new_model) == length(new_θ)
+    
+    LocalFit(data = lf.data,
+             model = new_model,
+             ROI_calibrated_spectrum = lf.ROI_calibrated_spectrum,
+             θ = new_θ)
+end 
 
 struct GlobalFitResult
     grouped::GroupedBySupport{IsotopicMotif}
@@ -326,7 +331,7 @@ end
 #    extract_fit_result_per_group_calibrated(...)
 #
 function extract_fit_result_per_group(grouped::GroupedBySupport{IsotopicMotif}, # not necessary Isotopic... as we only use interval
-                                      global_model::Recalibration,
+                                      global_model::Model2Fit_Recalibration,
                                       ROI_spectrum::Spectrum,
                                       θ_fit::AbstractVector,
                                       uncalibrated_spectrum::Spectrum)
@@ -363,6 +368,9 @@ global_fit_result = extract_fit_result_per_group(grouped,
 function plot_fit(gp_output_file::String,global_fit_result::GlobalFitResult)
     gp = GnuplotScript()
 
+    # set title
+    #
+    free_form(gp,"set title '$gp_output_file'")
 
     # plot shaded ROI
     #
@@ -391,7 +399,7 @@ function plot_fit(gp_output_file::String,global_fit_result::GlobalFitResult)
 
         # ROI fit (only plot this is there are overlapping isotopicmotif)
         #
-        if get_isotopicmotif_count(global_fit_result,idx_ROI) > 1
+        if get_isotopicmotif_count(global_fit_result,idx_ROI) > 0
             ROI_Y_fit = eval_y(ROI_model,ROI_spectrum.X,ROI_model_parameter)
             ROI_id = register_data!(gp,hcat(ROI_spectrum.X,ROI_Y_fit))
             replot!(gp,ROI_id,"u 1:2 w l lw 2 dt 3 lc rgb 'blue' notitle")
@@ -429,17 +437,62 @@ end
 
 plot_fit("demo.gp",global_fit_result)
 
-# function perform_local_fit(for_local_fit)
-#     conf = Levenberg_Marquardt_BC_Conf()
+# Add a calibration shift
+#
+function add_calibration_shift!(global_fit_result::GlobalFitResult;scale=1)
+    # Create the calibration map ================
+    #
+    map = Map_Translate(scale)
 
-#     for ((m,Y,X,θ)) in for_local_fit
-#         abs_θ = @. max(1,abs(θ))
-#         bc = BoundConstraints(θ-0.8* abs_θ,θ+1.2*abs_θ)
-#         nls = NLS_ForwardDiff_From_Model2Fit(m,X,Y)
-#         result = NLS_Solver.solve(nls,θ,bc,conf)
+    # Create a new vector of LocalFit
+    #
+    map!(global_fit_result.local_fit,global_fit_result.local_fit) do lf
+        calibrable_model = Model2Fit_Recalibration(lf.model,map)
+        calibrable_model_θ = vcat(lf.θ,1)
+        update_model(lf,calibrable_model,calibrable_model_θ)
+    end
+end
 
-#         println(result)
-#     end
-# end 
+# Perform local fits and update θ
+#
+function local_fit!(global_fit_result::GlobalFitResult)
+    conf = Levenberg_Marquardt_BC_Conf()
 
-#nperform_local_fit(for_local_fit)
+    for local_fit in global_fit_result.local_fit
+        # Refit the model ----------------
+        #
+        # Create new bound with some margin...
+        # TODO: maybe add this into Local_Fit <- This is mandatory!!!
+        #
+        θ = local_fit.θ
+
+        abs_θ = @. max(1,abs(θ))
+        bc = BoundConstraints(max.(0.0,θ-0.8* abs_θ),θ+1.2*abs_θ)
+
+        ROI_model = local_fit.model
+        ROI_X = local_fit.ROI_calibrated_spectrum.X
+        ROI_Y = local_fit.ROI_calibrated_spectrum.Y
+        
+        nls = NLS_ForwardDiff_From_Model2Fit(ROI_model,ROI_X,ROI_Y)
+
+        result = NLS_Solver.solve(nls,θ,bc,conf)
+
+        # Update parameter value
+        #
+        if NLS_Solver.converged(result)
+            local_fit.θ .= solution(result)
+        else
+            @warn "Local fit did not converged for ROI $(local_fit.data._group_idx)"
+        end
+    end
+
+    global_fit_result
+end
+
+# ATTENTION fit ok , mais plot buggé 
+add_calibration_shift!(global_fit_result,scale = 10)
+local_fit!(global_fit_result)
+# remove_calibration!(global_fit_result,scale = 10)
+
+plot_fit("demo_local.gp",global_fit_result)
+
