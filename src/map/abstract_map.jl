@@ -6,7 +6,7 @@ This type is an abstraction of a ``f:X ↦ Y=f(X)``.
 
 Such transformations can be used in various contexts:
 - calibration task: we have a reference ``\hat{X}`` to a calibrated ``X``
-- parameter transformation: we map a parameter vector ``\theta\prime` to a new one ``\theta``.
+- parameter transformation: we map a parameter vector ``\hat{θ}`` to a new one ``θ``.
 
 # Interface
 
