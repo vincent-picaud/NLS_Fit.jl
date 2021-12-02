@@ -44,6 +44,11 @@ function register_data!(gp::GnuplotScript,data::Spectrum;
     register_data!(gp,hcat(data.X,data.Y),copy_data=copy_data)
 end
 
+function free_form(gp::GnuplotScript,gp_line::AbstractString)
+    gp._script *= gp_line * "\n"
+
+    gp
+end
 
 function plot!(gp::GnuplotScript,uuid::RegisteredData_UUID,plot_arg::String)
     @assert is_registered(gp,uuid)
