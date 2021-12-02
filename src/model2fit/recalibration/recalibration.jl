@@ -68,7 +68,7 @@ function eval_calibrated_x(model::Recalibration,X_hat::AbstractVector,θ::Abstra
     map = get_calibration_map(model)
     map_θ = get_calibration_map_θ(model,θ)
     
-    eval_x(map, X_hat, map_θ)
+    eval_map(map, X_hat, map_θ)
 end
 
 get_calibrated_model(model::Recalibration) = model._model2calibrate

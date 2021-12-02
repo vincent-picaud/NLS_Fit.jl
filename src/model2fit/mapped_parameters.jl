@@ -61,7 +61,7 @@ function _visit_get_θ(model::Model2Fit_Mapped_Parameters,θ::AbstractVector)
     θ_model_reduced_size = length(θ_model_reduced)
     
     θ_map = @view θ[(θ_model_reduced_size+1):end]
-    mapped_elements = eval_x(model._map,model._elements2map, θ_map)
+    mapped_elements = eval_map(model._map,model._elements2map, θ_map)
     
     insert_some_elements(θ_model_reduced, model._indices,mapped_elements)
 end

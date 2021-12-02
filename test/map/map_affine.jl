@@ -6,7 +6,7 @@
 
     θ = Float32[1, 1]
     X_hat = Int[1,2,3]
-    X = eval_x(map,X_hat,θ)
+    X = eval_map(map,X_hat,θ)
 
     @test eltype(X) == Float32
     @test X ≈ Float32[2,3.5,5]
@@ -21,14 +21,14 @@ end
 
     θ = Float32[1, 1] 
     X_hat = Int[1,2,3]
-    X = eval_x(map,X_hat,θ)
+    X = eval_map(map,X_hat,θ)
 
     @test eltype(X) == Float32
     @test X ≈ Float32[2,3.5,5]
 
     θ = Float32[1, 0] # <- now the map is constant
     X_hat = Int[1,2,3]
-    X = eval_x(map,X_hat,θ)
+    X = eval_map(map,X_hat,θ)
 
     @test eltype(X) == Float32
     @test X ≈ Float32[2,2,2] # <- constant

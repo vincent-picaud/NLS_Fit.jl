@@ -60,11 +60,11 @@ Y_fitted = eval_y(model_with_σ_law_and_recal,X,θ_fitted)
 plot(X,Y, seriestype = :scatter)
 plot!(X,Y_fitted)
 
-# eval_x(model,X,solution(result))
-# eval_x(model,X,θ)
+# eval_map(model,X,solution(result))
+# eval_map(model,X,θ)
 
 
 
 
-# @benchmark eval_x($model,$X,$θ)
+# @benchmark eval_map($model,$X,$θ)
 
