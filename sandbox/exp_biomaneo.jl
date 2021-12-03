@@ -12,8 +12,8 @@ import NLS_Models: create_model
 # Used to tag isotopic motif within group
 #
 struct EmbeddedData_IsotopicMotif_Model
-    _group_idx::Int
-    _local_idx::Int
+    _name::String
+    _position::Float64
 end
 
 # Used to tag a complete group model
@@ -21,7 +21,8 @@ end
 # This model is the sum of Isotopic Model contained in the considered group
 #
 struct EmbeddedData_Group_Model
-    _group_idx::Int
+    # maybe one can add number of iso motif
+    _group_interval::Interval 
 end
 
 function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_group::Int)
@@ -32,12 +33,17 @@ function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_gr
     for idx_isotopicmotif in 1:n_isotopicmotif
         isotopic_motif = get_object(grouped,idx_group,idx_isotopicmotif)
 
+        profile_matrix = get_profile_matrix(isotopic_motif)
+
+        metadata = EmbeddedData_IsotopicMotif_Model(get_name(isotopic_motif),
+                                                    get_position(isotopic_motif))
         
-        model += Model2Fit_TaggedModel(Peak_Motif(Gaussian_Peak(),get_profile_matrix(isotopic_motif)),
-                                       EmbeddedData_IsotopicMotif_Model(idx_group,idx_isotopicmotif))
+        model += Model2Fit_TaggedModel(Peak_Motif(Gaussian_Peak(),profile_matrix),
+                                       metadata)
     end
 
-    model = Model2Fit_TaggedModel(model,EmbeddedData_Group_Model(idx_group))
+    group_interval = group_support_as_interval(grouped,idx_group)
+    model = Model2Fit_TaggedModel(model,EmbeddedData_Group_Model(group_interval))
    
     model
 end
@@ -87,13 +93,13 @@ end
 
 # not ok
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt")
- raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt")
 
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
+raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 
@@ -249,34 +255,6 @@ function get_group_idx(gfr::GlobalFitResult,idx::Int)
     gfr.local_fit[idx].data._group_idx
 end
 
-# Give the number of isotopic motifs in ROI idx
-function get_isotopicmotif_count(gfr::GlobalFitResult,idx::Int)
-
-    group_idx = get_group_idx(gfr,idx)
-
-    objects_in_group_size(gfr.grouped,group_idx)
-end 
-
-# Return isotopicmotif name
-function get_isotopicmotif_name(gfr::GlobalFitResult,idx::Int,local_idx::Int)
-
-    group_idx = get_group_idx(gfr,idx)
-
-    object = get_object(gfr.grouped,group_idx,local_idx)
-
-    get_name(object)
-end
-
-# Return isotopicmotif position
-function get_isotopicmotif_position(gfr::GlobalFitResult,idx::Int,local_idx::Int)
-
-    group_idx = get_group_idx(gfr,idx)
-
-    object = get_object(gfr.grouped,group_idx,local_idx)
-
-    get_position(object)
-end
-
 # Extract fit result, grouping model per group and providing the right X,Y (after calibration)
 #
 # caveat: vector index has no reason to be the group index. The right
@@ -308,8 +286,8 @@ function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicM
             # initial ROI_spectrum, the recalibration
             # procedure may have changed ROI range when
             # computed from calibrates_spectrum
-            group_idx = data._group_idx
-            group_interval = group_support_as_interval(grouped,group_idx)
+            #
+            group_interval = data._group_interval
             group_range =  create_range_from_interval(group_interval,calibrated_spectrum.X)
             ROI_calibrated_spectrum = calibrated_spectrum[group_range] # TODO: implement spectrum view
             
@@ -366,79 +344,129 @@ global_fit_result = extract_fit_result_per_group(grouped,
                                          solution(result),
                                          spectrum)
 
-# include("exp_gnuplot.jl")
 
-function plot_fit(gp_output_file::String,global_fit_result::GlobalFitResult)
-    gp = GnuplotScript()
 
-    # set title
+
+
+# Plot routine ****************************************************************
+
+# A structure to store model value: this struct in only used in plot_fit() function
+#
+struct ROI_IsotopicModel_ExtractedData
+    Y::AbstractVector
+    name::String
+    position::Float64
+end
+
+function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
+
+    # Transparent
     #
-    free_form(gp,"set title '$gp_output_file'")
-
-    # plot shaded ROI
+    free_form(gp,"set style fill transparent solid 0.5 noborder")
+    
+    # Plot local fits result
     #
-    n_ROI = length(global_fit_result)
-    for idx_ROI in 1:n_ROI
-        ROI_spectrum_uuid = register_data!(gp,get_spectrum(global_fit_result,idx_ROI))
+    for local_fit in local_fit_vect
 
-        if idx_ROI==1
-            plot!(gp,ROI_spectrum_uuid,"with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
-        else
-            replot!(gp,ROI_spectrum_uuid,"with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
-        end             
-    end
+        ROI_spectrum = local_fit.ROI_calibrated_spectrum
+        ROI_model = local_fit.model
+        ROI_model_parameter = local_fit.θ
 
-    # Plot global spectrum
-    #
-    calibrated_spectrum_uuid = register_data!(gp,global_fit_result.calibrated_spectrum)
-    replot!(gp,calibrated_spectrum_uuid,"u 1:2 w l t 'Calibrated spectrum'")
-
-    # Plot fit result
-    #
-    for idx_ROI in 1:n_ROI
-        ROI_spectrum = get_spectrum(global_fit_result,idx_ROI)
-        ROI_model = get_model(global_fit_result,idx_ROI)
-        ROI_model_parameter = get_model_parameter(global_fit_result,idx_ROI)
-
-        # ROI fit (only plot this is there are overlapping isotopicmotif)
-        #
-        if get_isotopicmotif_count(global_fit_result,idx_ROI) > 0
-            ROI_Y_fit = eval_y(ROI_model,ROI_spectrum.X,ROI_model_parameter)
-            ROI_id = register_data!(gp,hcat(ROI_spectrum.X,ROI_Y_fit))
-            replot!(gp,ROI_id,"u 1:2 w l lw 2 dt 3 lc rgb 'blue' notitle")
-        end
+        ROI_spectrum_calibrated = deepcopy(ROI_spectrum)
+        ROI_local_model_data = ROI_IsotopicModel_ExtractedData[]
         
-        # like there are potentially several isotopic motifs per ROI,
-        # we use the visit method to perform individual drawings
-        #
         visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
+            # if a recalibration is performed, record it for future plot
+            if m isa NLS_Fit.Model2Fit_Recalibration
+                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ),Y)
+                return true
+            end
+            
             if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
                 # get isotopic name & position using tagged data
                 #
                 embedded_data = get_tagged_data(m)
-                name = get_isotopicmotif_name(global_fit_result,embedded_data._group_idx,embedded_data._local_idx)
-                position = get_isotopicmotif_position(global_fit_result,embedded_data._group_idx,embedded_data._local_idx)
+                name = embedded_data._name
+                position = embedded_data._position
 
-                # compute and plot model Y value
+                # compute model value and store it for future use
+                # (plotting...)
                 #
                 Y_fit = eval_y(m,X,θ)
-                motif_id = register_data!(gp,hcat(X,Y_fit)) # OK
-                replot!(gp,motif_id,"u 1:2 w l t '$name'")
+                push!(ROI_local_model_data,
+                      ROI_IsotopicModel_ExtractedData(Y_fit,name,position))
 
-                # plot the vertical 
-                #
-                add_vertical_line!(gp,position,name=name)
                 
                 return false
             end
             true
         end
+
+        # Concatenate all data vectors X,Y1,Y2... in a single matrix
+        #
+        # Note by puttingisotopicModel_data we preserve the identification:
+        #
+        #    "curve number" <-> index of all_ROI_isotopicModel_extractedData
+        #
+        data = hcat( (isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
+                     ROI_spectrum_calibrated.X,
+                     ROI_spectrum_calibrated.Y)
+        data_m = size(data,2)
+        data_m_last = data_m -2 # number of the last model
+        data_m_X = data_m-1
+        data_m_Y = data_m
+        
+        data_id = register_data!(gp,data)
+        replot!(gp,data_id,"u $data_m_X:$data_m_Y with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
+
+        for j in 1:data_m_last
+            name     = ROI_local_model_data[j].name
+            position = ROI_local_model_data[j].position
+
+            replot!(gp,data_id,"u $data_m_X:$j w l lw 2 t '$name'")
+                            # plot the vertical 
+                
+            add_vertical_line!(gp,position,name=name)
+        end
+
+        # Sum all
+        #    reduce((l,r)->l*"+"*r,map(x->"\$$x",1:4))
+        # produce "\$1+\$2+\$3+\$4"
+        #
+        if data_m_last>1
+            cmd_str = reduce((l,r)->l*"+"*r,map(x->"\$$x",1:data_m_last))
+            cmd_str = "u $data_m_X:("*cmd_str*") w l dt 3 lc rgb 'blue' notitle"
+            replot!(gp,data_id,cmd_str)
+        end 
     end
-    
-    write(gp_output_file,gp)
+
+    gp
 end
 
-plot_fit("demo.gp",global_fit_result)
+function plot_fit(gp_output_file::String,
+                  uncalibrated_spectrum::Spectrum,
+                  local_fit_vect::AbstractVector{LocalFit})
+    gp = GnuplotScript()
+
+        
+    # set title
+    # 
+    free_form(gp,"set title '$gp_output_file' noenhanced")
+
+    sp_id = register_data!(gp,hcat(uncalibrated_spectrum.X,uncalibrated_spectrum.Y))
+    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' t 'uncalibrated spectrum'")
+
+    plot_fit(gp,local_fit_vect)
+    write(gp_output_file,gp)
+
+    gp
+end 
+
+# ****************************************************************
+
+# Plot result with global calibration
+#
+plot_fit("demo.gp",spectrum, global_fit_result.local_fit)
 
 # Add a calibration shift
 #
@@ -492,140 +520,11 @@ function local_fit!(global_fit_result::GlobalFitResult)
     global_fit_result
 end
 
-# ATTENTION fit ok , mais plot buggé 
+# Perform local fit ================
+#
 add_calibration_shift!(global_fit_result,scale = 10)
 local_fit!(global_fit_result)
-# remove_calibration!(global_fit_result,scale = 10)
 
-plot_fit("demo_local.gp",global_fit_result)
-
-# Extract parameters
-function tmp_extract_σ_τ(global_fit_result::GlobalFitResult)
-    fit_vect = global_fit_result.local_fit
-    
-    position_σ_τ = Matrix{Float64}(undef,length(fit_vect),3)
-    
-    for (idx,local_fit) in enumerate(fit_vect)
-        position_σ_τ[idx, 1] = get_isotopicmotif_position(global_fit_result,idx,1)
-        position_σ_τ[idx, 2] = local_fit.θ[2]
-        position_σ_τ[idx, 3] = local_fit.θ[end]
-    end
-
-    position_σ_τ
-end
-
-tmp = tmp_extract_σ_τ(global_fit_result)
-writedlm("mat.dat",tmp)
-
-
-# ****************************************************************
-
-# A structure to store model value
+# Plot result
 #
-struct ROI_IsotopicModel_ExtractedData
-    Y::AbstractVector
-    name::String
-    position::Float64
-end
-
-function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
-
-    # Transparent
-    #
-    free_form(gp,"set style fill transparent solid 0.5 noborder")
-    
-    # Plot local fits result
-    #
-    for local_fit in local_fit_vect
-
-        ROI_spectrum = local_fit.ROI_calibrated_spectrum
-        ROI_model = local_fit.model
-        ROI_model_parameter = local_fit.θ
-
-        ROI_spectrum_calibrated = deepcopy(ROI_spectrum)
-        ROI_local_model_data = ROI_IsotopicModel_ExtractedData[]
-        
-        visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
-            # if a recalibration is performed, record it for future plot
-            if m isa NLS_Fit.Model2Fit_Recalibration
-                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ),Y)
-                return true
-            end
-            
-            if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
-                # get isotopic name & position using tagged data
-                #
-                embedded_data = get_tagged_data(m)
-                name = "toto"  # get_isotopicmotif_name(embedded_data)
-                position = 1.0 # get_isotopicmotif_position(embedded_data)
-
-                # compute and plot model Y value
-                #
-                Y_fit = eval_y(m,X,θ)
-                push!(ROI_local_model_data,
-                      ROI_IsotopicModel_ExtractedData(Y_fit,name,position))
-
-                # plot the vertical 
-                #
-                # add_vertical_line!(gp,position,name=name)
-                
-                return false
-            end
-            true
-        end
-
-        # Prepare data for plotting
-        #
-        # Note by puttingisotopicModel_data we preserve the identification:
-        #
-        #    "curve number" <-> index of all_ROI_isotopicModel_extractedData
-        #
-        data = hcat( (isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
-                     ROI_spectrum_calibrated.X,
-                     ROI_spectrum_calibrated.Y)
-        data_m = size(data,2)
-        data_m_last = data_m -2
-        data_m_X = data_m-1
-        data_m_Y = data_m
-        
-        data_id = register_data!(gp,data)
-        replot!(gp,data_id,"u $data_m_X:$data_m_Y with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
-
-        for j in 1:data_m_last
-            name     = ROI_local_model_data[j].name
-            position = ROI_local_model_data[j].position
-
-            replot!(gp,data_id,"u $data_m_X:$j w l lw 2 t '$name'")
-        end
-
-        # Sum all
-        #    reduce((l,r)->l*"+"*r,map(x->"\$$x",1:4))
-        # produce "\$1+\$2+\$3+\$4"
-        #
-        if data_m_last>1
-            cmd_str = reduce((l,r)->l*"+"*r,map(x->"\$$x",1:data_m_last))
-            cmd_str = "u $data_m_X:("*cmd_str*") w l dt 3 lc rgb 'blue' notitle"
-            replot!(gp,data_id,cmd_str)
-        end 
-    end
-
-    gp
-end
-
-function plot_fit(gp_output_file::String,local_fit_vect::AbstractVector{LocalFit})
-    gp = GnuplotScript()
-
-        
-    # set title
-    # 
-    free_form(gp,"set title '$gp_output_file' noenhanced")
-
-    sp_id = register_data!(gp,hcat(spectrum.X,spectrum.Y))
-    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' notitle")
-
-    plot_fit(gp,local_fit_vect)
-    write(gp_output_file,gp)
-
-    gp
-end 
-plot_fit("test.gp",global_fit_result.local_fit)
+plot_fit("demo_local.gp",spectrum,global_fit_result.local_fit)
