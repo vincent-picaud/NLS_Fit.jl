@@ -144,7 +144,7 @@ stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,
 
 # Add affine calibration
 # ================
-#recalibration_map = Map_Affine_Monotonic(ROI_spectrum.X[1],ROI_spectrum.X[end])
+#
 recalibration_map = Map_Affine(ROI_spectrum.X[1],ROI_spectrum.X[end])
 
 stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law,recalibration_map)
@@ -164,8 +164,6 @@ n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration)
                                  θ_init,
                                  [1:21;])
 
-Y_fit_init = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,θ_init) # for gnuplot
-
 # Solve the problem
 # ================
 bc = BoundConstraints(θ_lb,θ_ub)
@@ -174,35 +172,14 @@ conf = Levenberg_Marquardt_BC_Conf()
 
 result = NLS_Solver.solve(nls,θ_init,bc,conf)
 
-# Plot solution
-# ================
-Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
+# # Plot solution
+# # ================
+# Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
 
-recalibrated_spectrum = Spectrum(eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,solution(result)),spectrum.Y)
+# recalibrated_spectrum = Spectrum(eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,solution(result)),spectrum.Y)
 
-writedlm("poub_calibration.txt",hcat(spectrum.X,recalibrated_spectrum.X,spectrum.Y))
+# writedlm("poub_calibration.txt",hcat(spectrum.X,recalibrated_spectrum.X,spectrum.Y))
 
-# Here prepare for local fittings
-# ****************************************************************
-# TODO
-# Compute the calibrated spectrum and keep the model without the
-# recalibration extra-layer
-# -> must implement visit before 
-#recalibrated_spectrum = Spectrum(eval_calibrated_x,
-
-# save text file, to be used by gnuplot
-#
-# plot "poub.txt" u 1:2 w l
-# replot "poub.txt" u 1:4 w l t "init"
-# replot "poub.txt" u 1:3 w l lw 2 t "finited"
-#
-writedlm("poub.txt",hcat(ROI_spectrum.X,ROI_spectrum.Y,Y_fit,Y_fit_init))
-
-# ****************************************************************
-solution(result)
-
-
-NLS_Fit.visit_debug(stacked_models_σ_law_recalibration,ROI_spectrum.Y,ROI_spectrum.X,solution(result))
 
 # This is struct only make sense when used inside a GlobalFitResult struct
 # (by example we need grouped or calibrated spectrum to extract useful information)
