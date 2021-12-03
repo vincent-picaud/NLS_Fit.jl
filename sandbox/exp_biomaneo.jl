@@ -87,14 +87,14 @@ end
 
 # not ok
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
-raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt")
+ raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt")
 
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 
 raw_spectrum.Y ./= maximum(raw_spectrum.Y)
@@ -530,6 +530,10 @@ end
 
 function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
 
+    # Transparent
+    #
+    free_form(gp,"set style fill transparent solid 0.5 noborder")
+    
     # Plot local fits result
     #
     for local_fit in local_fit_vect
@@ -617,7 +621,7 @@ function plot_fit(gp_output_file::String,local_fit_vect::AbstractVector{LocalFit
     free_form(gp,"set title '$gp_output_file' noenhanced")
 
     sp_id = register_data!(gp,hcat(spectrum.X,spectrum.Y))
-    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray30' notitle")
+    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' notitle")
 
     plot_fit(gp,local_fit_vect)
     write(gp_output_file,gp)
