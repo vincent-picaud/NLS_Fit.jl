@@ -87,11 +87,12 @@ end
 
 # not ok
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt")
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
-
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
+raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt")
 
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
- raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
@@ -137,7 +138,9 @@ stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,
 
 # Add affine calibration
 # ================
-recalibration_map = Map_Affine_Monotonic(ROI_spectrum.X[1],ROI_spectrum.X[end])
+#recalibration_map = Map_Affine_Monotonic(ROI_spectrum.X[1],ROI_spectrum.X[end])
+recalibration_map = Map_Affine(ROI_spectrum.X[1],ROI_spectrum.X[end])
+
 stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law,recalibration_map)
 
 # Initialize θ
@@ -419,7 +422,7 @@ function plot_fit(gp_output_file::String,global_fit_result::GlobalFitResult)
                 # compute and plot model Y value
                 #
                 Y_fit = eval_y(m,X,θ)
-                motif_id = register_data!(gp,hcat(X,Y_fit)) 
+                motif_id = register_data!(gp,hcat(X,Y_fit)) # OK
                 replot!(gp,motif_id,"u 1:2 w l t '$name'")
 
                 # plot the vertical 
@@ -496,3 +499,129 @@ local_fit!(global_fit_result)
 
 plot_fit("demo_local.gp",global_fit_result)
 
+# Extract parameters
+function tmp_extract_σ_τ(global_fit_result::GlobalFitResult)
+    fit_vect = global_fit_result.local_fit
+    
+    position_σ_τ = Matrix{Float64}(undef,length(fit_vect),3)
+    
+    for (idx,local_fit) in enumerate(fit_vect)
+        position_σ_τ[idx, 1] = get_isotopicmotif_position(global_fit_result,idx,1)
+        position_σ_τ[idx, 2] = local_fit.θ[2]
+        position_σ_τ[idx, 3] = local_fit.θ[end]
+    end
+
+    position_σ_τ
+end
+
+tmp = tmp_extract_σ_τ(global_fit_result)
+writedlm("mat.dat",tmp)
+
+
+# ****************************************************************
+
+# A structure to store model value
+#
+struct ROI_IsotopicModel_ExtractedData
+    Y::AbstractVector
+    name::String
+    position::Float64
+end
+
+function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
+
+    # Plot local fits result
+    #
+    for local_fit in local_fit_vect
+
+        ROI_spectrum = local_fit.ROI_calibrated_spectrum
+        ROI_model = local_fit.model
+        ROI_model_parameter = local_fit.θ
+
+        ROI_spectrum_calibrated = deepcopy(ROI_spectrum)
+        ROI_local_model_data = ROI_IsotopicModel_ExtractedData[]
+        
+        visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
+            # if a recalibration is performed, record it for future plot
+            if m isa NLS_Fit.Model2Fit_Recalibration
+                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ),Y)
+                return true
+            end
+            
+            if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
+                # get isotopic name & position using tagged data
+                #
+                embedded_data = get_tagged_data(m)
+                name = "toto"  # get_isotopicmotif_name(embedded_data)
+                position = 1.0 # get_isotopicmotif_position(embedded_data)
+
+                # compute and plot model Y value
+                #
+                Y_fit = eval_y(m,X,θ)
+                push!(ROI_local_model_data,
+                      ROI_IsotopicModel_ExtractedData(Y_fit,name,position))
+
+                # plot the vertical 
+                #
+                # add_vertical_line!(gp,position,name=name)
+                
+                return false
+            end
+            true
+        end
+
+        # Prepare data for plotting
+        #
+        # Note by puttingisotopicModel_data we preserve the identification:
+        #
+        #    "curve number" <-> index of all_ROI_isotopicModel_extractedData
+        #
+        data = hcat( (isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
+                     ROI_spectrum_calibrated.X,
+                     ROI_spectrum_calibrated.Y)
+        data_m = size(data,2)
+        data_m_last = data_m -2
+        data_m_X = data_m-1
+        data_m_Y = data_m
+        
+        data_id = register_data!(gp,data)
+        replot!(gp,data_id,"u $data_m_X:$data_m_Y with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
+
+        for j in 1:data_m_last
+            name     = ROI_local_model_data[j].name
+            position = ROI_local_model_data[j].position
+
+            replot!(gp,data_id,"u $data_m_X:$j w l lw 2 t '$name'")
+        end
+
+        # Sum all
+        #    reduce((l,r)->l*"+"*r,map(x->"\$$x",1:4))
+        # produce "\$1+\$2+\$3+\$4"
+        #
+        if data_m_last>1
+            cmd_str = reduce((l,r)->l*"+"*r,map(x->"\$$x",1:data_m_last))
+            cmd_str = "u $data_m_X:("*cmd_str*") w l dt 3 lc rgb 'blue' notitle"
+            replot!(gp,data_id,cmd_str)
+        end 
+    end
+
+    gp
+end
+
+function plot_fit(gp_output_file::String,local_fit_vect::AbstractVector{LocalFit})
+    gp = GnuplotScript()
+
+        
+    # set title
+    # 
+    free_form(gp,"set title '$gp_output_file' noenhanced")
+
+    sp_id = register_data!(gp,hcat(spectrum.X,spectrum.Y))
+    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray30' notitle")
+
+    plot_fit(gp,local_fit_vect)
+    write(gp_output_file,gp)
+
+    gp
+end 
+plot_fit("test.gp",global_fit_result.local_fit)
