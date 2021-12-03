@@ -11,9 +11,10 @@ to_gnuplot_uuid(uuid::RegisteredData_UUID) = "\$G"*string(uuid)
 mutable struct GnuplotScript
     _registered_data::Dict{RegisteredData_UUID,Any}
     _script::String
+    _any_plot::Bool
 end 
 
-GnuplotScript() = GnuplotScript(Dict{RegisteredData_UUID,AbstractArray}(),String(""))
+GnuplotScript() = GnuplotScript(Dict{RegisteredData_UUID,AbstractArray}(),String(""),false)
 
 # check if data has already been registered
 #
@@ -54,14 +55,17 @@ function plot!(gp::GnuplotScript,uuid::RegisteredData_UUID,plot_arg::String)
     @assert is_registered(gp,uuid)
 
     gp._script = gp._script * "plot $(to_gnuplot_uuid(uuid)) " * plot_arg * "\n"
-
+    gp._any_plot = true
     gp
 end
 
 function replot!(gp::GnuplotScript,uuid::RegisteredData_UUID,plot_arg::String)
 
-    gp._script = gp._script * "re"
-
+    # prevent from using replot for the first plot
+    if gp._any_plot
+        gp._script = gp._script * "re"
+    end
+    
     plot!(gp,uuid,plot_arg)
 end
 
