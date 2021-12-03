@@ -205,33 +205,6 @@ function update_model(lf::LocalFit,new_model::NLS_Fit.Abstract_Model2Fit,new_θ:
              θ = new_θ)
 end 
 
-struct GlobalFitResult
-    grouped::GroupedBySupport{IsotopicMotif}
-    calibrated_spectrum::Spectrum
-    local_fit::Vector{LocalFit}
-end
-
-import Base: length
-Base.length(gfr::GlobalFitResult) = length(gfr.local_fit)
-
-function get_spectrum(gfr::GlobalFitResult,idx::Int)
-    gfr.local_fit[idx].ROI_calibrated_spectrum
-end 
-
-function get_model(gfr::GlobalFitResult,idx::Int)
-    gfr.local_fit[idx].model 
-end 
-function get_model_parameter(gfr::GlobalFitResult,idx::Int)
-    gfr.local_fit[idx].θ
-end 
-
-function get_group_idx(gfr::GlobalFitResult,idx::Int)
-    # often idx = group_idx but this two indices are different (by
-    # example if there are fewer ROI model than group)
-    #
-    gfr.local_fit[idx].data._group_idx
-end
-
 # Extract fit result, grouping model per group and providing the right X,Y (after calibration)
 #
 # caveat: vector index has no reason to be the group index. The right
@@ -302,7 +275,7 @@ function extract_fit_result_per_group(grouped::GroupedBySupport{IsotopicMotif}, 
     
     calibrated_spectrum = Spectrum(calibrated_X,spectrum.Y)
 
-    # Continue to process each group model
+    # Process each ROI using the recalibrated spectrum
     #
     local_fit_vect = extract_fit_result_per_group_helper(grouped,
                                                          global_model_after_calibration,
@@ -310,16 +283,15 @@ function extract_fit_result_per_group(grouped::GroupedBySupport{IsotopicMotif}, 
                                                          global_model_after_calibration_θ_fit,
                                                          calibrated_spectrum)
 
-    
-    GlobalFitResult(grouped,calibrated_spectrum,local_fit_vect)
+    local_fit_vect
 end 
 
 
-global_fit_result = extract_fit_result_per_group(grouped,
-                                         stacked_models_σ_law_recalibration,
-                                         ROI_spectrum,
-                                         solution(result),
-                                         spectrum)
+all_fit_result_per_ROI = extract_fit_result_per_group(grouped,
+                                                      stacked_models_σ_law_recalibration,
+                                                      ROI_spectrum,
+                                                      solution(result),
+                                                      spectrum)
 
 
 
@@ -443,18 +415,231 @@ end
 
 # Plot result with global calibration
 #
-plot_fit("demo.gp",spectrum, global_fit_result.local_fit)
+plot_fit("demo.gp",spectrum, all_fit_result_per_ROI)
+
+# Extract fit result, grouping model per group and providing the right X,Y (after calibration)
+#
+# caveat: vector index has no reason to be the group index. The right
+# way to get the group idx is to use data field.
+#
+# Model associated to each group is detected thanks to
+#
+#   Model2Fit_TaggedModel{ _ , EmbeddedData_Group_Model}
+#
+# type checking
+#
+function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicMotif}, # not necessary Isotopic... as we only use interval
+                                             global_model::NLS_Fit.Abstract_Model2Fit,
+                                             ROI_spectrum::Spectrum,
+                                             θ_fit::AbstractVector,
+                                             calibrated_spectrum::Spectrum)
+    
+    collected_model_per_group = Vector{LocalFit}(undef,0)
+    
+    visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
+        # filter model
+        #
+        if get_tagged_data_type(model) === EmbeddedData_Group_Model
+            # process local model 
+            data  = get_tagged_data(model)
+            model = get_tagged_model(model)
+            
+            # extract the right ROIs: compared to our
+            # initial ROI_spectrum, the recalibration
+            # procedure may have changed ROI range when
+            # computed from calibrates_spectrum
+            #
+            group_interval = data._group_interval
+            group_range =  create_range_from_interval(group_interval,calibrated_spectrum.X)
+            ROI_calibrated_spectrum = calibrated_spectrum[group_range] # TODO: implement spectrum view
+            
+            # store the result
+            #
+            push!(collected_model_per_group,
+                  LocalFit(data = data,
+                           model = model,
+                           ROI_calibrated_spectrum = ROI_calibrated_spectrum,
+                           θ=θ))
+            return false
+        end
+        
+        true
+    end
+    
+    collected_model_per_group
+end
+
+# A wrapper that perform calibration before calling
+#
+#    extract_fit_result_per_group_calibrated(...)
+#
+function extract_fit_result_per_group(grouped::GroupedBySupport{IsotopicMotif}, # not necessary Isotopic... as we only use interval
+                                      global_model::Model2Fit_Recalibration,
+                                      ROI_spectrum::Spectrum,
+                                      θ_fit::AbstractVector,
+                                      uncalibrated_spectrum::Spectrum)
+
+    # Perform calibration and remove calbibration model
+    #
+    calibrated_X = eval_calibrated_x(global_model,uncalibrated_spectrum.X,θ_fit)
+    global_model_after_calibration = get_calibrated_model(global_model)
+    global_model_after_calibration_θ_fit = get_calibrated_model_θ(global_model,θ_fit)
+    
+    calibrated_spectrum = Spectrum(calibrated_X,spectrum.Y)
+
+    # Continue to process each group model
+    #
+    local_fit_vect = extract_fit_result_per_group_helper(grouped,
+                                                         global_model_after_calibration,
+                                                         ROI_spectrum,
+                                                         global_model_after_calibration_θ_fit,
+                                                         calibrated_spectrum)
+
+    
+    local_fit_vect
+end 
+
+
+all_fit_result_per_ROI = extract_fit_result_per_group(grouped,
+                                                      stacked_models_σ_law_recalibration,
+                                                      ROI_spectrum,
+                                                      solution(result),
+                                                      spectrum)
+
+
+
+
+
+# Plot routine ****************************************************************
+
+# A structure to store model value: this struct in only used in plot_fit() function
+#
+struct ROI_IsotopicModel_ExtractedData
+    Y::AbstractVector
+    name::String
+    position::Float64
+end
+
+function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
+
+    # Transparent
+    #
+    free_form(gp,"set style fill transparent solid 0.5 noborder")
+    
+    # Plot local fits result
+    #
+    for local_fit in local_fit_vect
+
+        ROI_spectrum = local_fit.ROI_calibrated_spectrum
+        ROI_model = local_fit.model
+        ROI_model_parameter = local_fit.θ
+
+        ROI_spectrum_calibrated = deepcopy(ROI_spectrum)
+        ROI_local_model_data = ROI_IsotopicModel_ExtractedData[]
+        
+        visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
+            # if a recalibration is performed, record it for future plot
+            if m isa NLS_Fit.Model2Fit_Recalibration
+                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ),Y)
+                return true
+            end
+            
+            if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
+                # get isotopic name & position using tagged data
+                #
+                embedded_data = get_tagged_data(m)
+                name = embedded_data._name
+                position = embedded_data._position
+
+                # compute model value and store it for future use
+                # (plotting...)
+                #
+                Y_fit = eval_y(m,X,θ)
+                push!(ROI_local_model_data,
+                      ROI_IsotopicModel_ExtractedData(Y_fit,name,position))
+
+                
+                return false
+            end
+            true
+        end
+
+        # Concatenate all data vectors X,Y1,Y2... in a single matrix
+        #
+        # Note by puttingisotopicModel_data we preserve the identification:
+        #
+        #    "curve number" <-> index of all_ROI_isotopicModel_extractedData
+        #
+        data = hcat( (isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
+                     ROI_spectrum_calibrated.X,
+                     ROI_spectrum_calibrated.Y)
+        data_m = size(data,2)
+        data_m_last = data_m -2 # number of the last model
+        data_m_X = data_m-1
+        data_m_Y = data_m
+        
+        data_id = register_data!(gp,data)
+        replot!(gp,data_id,"u $data_m_X:$data_m_Y with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
+
+        for j in 1:data_m_last
+            name     = ROI_local_model_data[j].name
+            position = ROI_local_model_data[j].position
+
+            replot!(gp,data_id,"u $data_m_X:$j w l lw 2 t '$name'")
+                            # plot the vertical 
+                
+            add_vertical_line!(gp,position,name=name)
+        end
+
+        # Sum all
+        #    reduce((l,r)->l*"+"*r,map(x->"\$$x",1:4))
+        # produce "\$1+\$2+\$3+\$4"
+        #
+        if data_m_last>1
+            cmd_str = reduce((l,r)->l*"+"*r,map(x->"\$$x",1:data_m_last))
+            cmd_str = "u $data_m_X:("*cmd_str*") w l dt 3 lc rgb 'blue' notitle"
+            replot!(gp,data_id,cmd_str)
+        end 
+    end
+
+    gp
+end
+
+function plot_fit(gp_output_file::String,
+                  uncalibrated_spectrum::Spectrum,
+                  local_fit_vect::AbstractVector{LocalFit})
+    gp = GnuplotScript()
+
+        
+    # set title
+    # 
+    free_form(gp,"set title '$gp_output_file' noenhanced")
+
+    sp_id = register_data!(gp,hcat(uncalibrated_spectrum.X,uncalibrated_spectrum.Y))
+    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' t 'uncalibrated spectrum'")
+
+    plot_fit(gp,local_fit_vect)
+    write(gp_output_file,gp)
+
+    gp
+end 
+
+# ****************************************************************
+
+# Plot result with global calibration
+#
+plot_fit("demo.gp",spectrum, all_fit_result_per_ROI)
 
 # Add a calibration shift
 #
-function add_calibration_shift!(global_fit_result::GlobalFitResult;scale=1)
+function add_calibration_shift!(all_local_fits::AbstractVector{LocalFit};scale=1)
     # Create the calibration map ================
     #
     map = Map_Translate(scale)
 
     # Create a new vector of LocalFit
     #
-    map!(global_fit_result.local_fit,global_fit_result.local_fit) do lf
+    map!(all_local_fits,all_local_fits) do lf
         calibrable_model = Model2Fit_Recalibration(lf.model,map)
         calibrable_model_θ = vcat(lf.θ,1)
         update_model(lf,calibrable_model,calibrable_model_θ)
@@ -463,10 +648,10 @@ end
 
 # Perform local fits and update θ
 #
-function local_fit!(global_fit_result::GlobalFitResult)
+function local_fit!(all_local_fits::AbstractVector{LocalFit})
     conf = Levenberg_Marquardt_BC_Conf()
 
-    for local_fit in global_fit_result.local_fit
+    for local_fit in all_local_fits
         # Refit the model ----------------
         #
         # Create new bound with some margin...
@@ -494,14 +679,14 @@ function local_fit!(global_fit_result::GlobalFitResult)
         end
     end
 
-    global_fit_result
+    all_fit_result_per_ROI
 end
 
 # Perform local fit ================
 #
-add_calibration_shift!(global_fit_result,scale = 10)
-local_fit!(global_fit_result)
+add_calibration_shift!(all_fit_result_per_ROI,scale = 10)
+local_fit!(all_fit_result_per_ROI)
 
 # Plot result
 #
-plot_fit("demo_local.gp",spectrum,global_fit_result.local_fit)
+plot_fit("demo_local.gp",spectrum,all_fit_result_per_ROI)
