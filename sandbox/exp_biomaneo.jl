@@ -20,7 +20,7 @@ end
 #
 # This model is the sum of Isotopic Model contained in the considered group
 #
-struct EmbeddedData_Group_Model
+struct EmbeddedData_ROI_Complete_Model
     # maybe one can add number of iso motif
     _group_interval::Interval 
 end
@@ -43,7 +43,7 @@ function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_gr
     end
 
     group_interval = group_support_as_interval(grouped,idx_group)
-    model = Model2Fit_TaggedModel(model,EmbeddedData_Group_Model(group_interval))
+    model = Model2Fit_TaggedModel(model,EmbeddedData_ROI_Complete_Model(group_interval))
    
     model
 end
@@ -180,20 +180,12 @@ conf = Levenberg_Marquardt_BC_Conf()
 
 result = NLS_Solver.solve(nls,θ_init,bc,conf)
 
-# # Plot solution
-# # ================
-# Y_fit = eval_y(stacked_models_σ_law_recalibration,ROI_spectrum.X,solution(result))
+# ****************************************************************
 
-# recalibrated_spectrum = Spectrum(eval_calibrated_x(stacked_models_σ_law_recalibration,spectrum.X,solution(result)),spectrum.Y)
-
-# writedlm("poub_calibration.txt",hcat(spectrum.X,recalibrated_spectrum.X,spectrum.Y))
-
-
-# This is struct only make sense when used inside a GlobalFitResult struct
-# (by example we need grouped or calibrated spectrum to extract useful information)
+# Store IsotopicMotif data useful for local fitting
 #
 Base.@kwdef struct LocalFit
-    data::EmbeddedData_Group_Model
+    data::EmbeddedData_ROI_Complete_Model
     model::NLS_Fit.Abstract_Model2Fit
     ROI_calibrated_spectrum::Spectrum # CAVEAT: do not replace by
                                       # range, as this allows us to
@@ -235,7 +227,7 @@ function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicM
     visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
         # filter model
         #
-        if get_tagged_data_type(model) === EmbeddedData_Group_Model
+        if get_tagged_data_type(model) === EmbeddedData_ROI_Complete_Model
             # process local model 
             data  = get_tagged_data(model)
             model = get_tagged_model(model)
@@ -419,11 +411,14 @@ function plot_fit(gp_output_file::String,
     gp
 end 
 
-# ****************************************************************
+
 
 # Plot result with global calibration
 #
 plot_fit("demo.gp",spectrum, all_fit_result_per_ROI)
+
+# ****************************************************************
+
 
 # Extract fit result, grouping model per group and providing the right X,Y (after calibration)
 #
@@ -447,7 +442,7 @@ function extract_fit_result_per_group_helper(grouped::GroupedBySupport{IsotopicM
     visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
         # filter model
         #
-        if get_tagged_data_type(model) === EmbeddedData_Group_Model
+        if get_tagged_data_type(model) === EmbeddedData_ROI_Complete_Model
             # process local model 
             data  = get_tagged_data(model)
             model = get_tagged_model(model)
