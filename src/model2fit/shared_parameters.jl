@@ -3,6 +3,32 @@
 export Model2Fit_Shared_Parameters
 export get_model, get_model_θ
 
+@doc raw"""
+
+Share a set of parameters
+
+# Example
+
+Let's assume that we have an initial model `model` with `θ` as parameter vector. 
+If we want θ1, θ3, θ5 to share a same value θshared then:
+
+```julia
+indices_to_share = [1,3,5]
+        
+model_with_shared_params = Model2Fit_Shared_Parameters(model, indices_to_share)
+```
+
+Do not forget to udpate parameter vector θ, this can be done as
+follows:
+
+```julia
+deleteat!(θ, indices_to_share)
+push!(θ, θshared)
+```
+
+# Also see
+- [`Model2Fit_Mapped_Parameters`](@ref) 
+"""
 struct Model2Fit_Shared_Parameters{MODEL <: Abstract_Model2Fit,
                                    INDICES <: AbstractVector{Int}}  <: Abstract_Model2Fit
     _model::MODEL

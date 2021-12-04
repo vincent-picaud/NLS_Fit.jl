@@ -1,6 +1,16 @@
 export Model2Fit_Mapped_Parameters
 export get_model_θ, get_model
 
+@doc raw"""
+
+Create a new model, where some parameters are computed using a
+[`Abstract_Map`](@ref).
+
+TODO: not clear how to use it: certainly need a refactoring...
+
+# Also see
+- [`Model2Fit_Shared_Parameters`](@ref) 
+"""
 struct Model2Fit_Mapped_Parameters{MODEL <: Abstract_Model2Fit,
                                    MAP <: Abstract_Map,
                                    INDICES <: AbstractVector{Int},

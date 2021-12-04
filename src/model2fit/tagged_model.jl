@@ -32,6 +32,13 @@ get_tagged_data(m::Model2Fit_TaggedModel{MODEL,DATA)::DATA
 Return embedded data
 """
 get_tagged_data(m::Model2Fit_TaggedModel) = m._data
+@doc raw"""
+```julia
+get_tagged_model(m::Model2Fit_TaggedModel{MODEL,DATA)::DATA
+```
+
+Return tagged model
+"""
 get_tagged_model(m::Model2Fit_TaggedModel) = m._model
 
 @doc raw"""
