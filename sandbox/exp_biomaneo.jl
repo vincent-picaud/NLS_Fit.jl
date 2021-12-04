@@ -6,8 +6,17 @@ using DelimitedFiles
 include("exp_gnuplot.jl")
 
 # ================================================================
+#
+# We tag two models:
+#
+# * Peak_Motif: is tagged to embed some meta data like name and
+#   position. This meta data are mainly used to plot fit result.
+#
+# * Model per ROI: is tagged to be able to retrieve model associated
+#   to ROIs. Embedded data is ROI interval.
+#
 
-import NLS_Models: create_model
+
 
 # Used to tag isotopic motif within group
 #
@@ -25,6 +34,9 @@ struct EmbeddedData_ROI_Complete_Model
     _group_interval::Interval 
 end
 
+# Create ROI model
+#
+import NLS_Models: create_model
 function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_group::Int)
 
     model = Model2Fit_Empty()
@@ -48,7 +60,7 @@ function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_gr
     model
 end
 
-# Create a vector of models. Each model associated to one group
+# Create a vector of ROI models
 #
 function create_vector_of_models(grouped::GroupedBySupport{IsotopicMotif})
     n_group = group_size(grouped)
@@ -58,7 +70,12 @@ end
 # ================================================================
 
 # Create stacked model and associated spectrum build from all ROIs juxtaposition
-# 
+#
+# # parameters
+#
+# - spectrum: the whole spectrum, before ROI stacking. The returned
+#   spectrum is this spectrum restricted to points belonging to ROI.
+#
 function create_stacked_model_ROI_spectrum_pair(grouped::GroupedBySupport{IsotopicMotif},whole_spectrum_before_ROI_stacking::Spectrum)
     # Create on model per ROI and store these model into a vector
     #
@@ -73,7 +90,7 @@ function create_stacked_model_ROI_spectrum_pair(grouped::GroupedBySupport{Isotop
     # Extract ROI data
     #
     ROI_stacked_spectrum = Spectrum(extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.X),
-                                          extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.Y))
+                                    extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.Y))
 
     # Create the stacked models
     #
@@ -107,7 +124,15 @@ raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spect
 
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 
+
+# Normalize spectrum ================
+#
+# TODO: store normalization coef and use it to output final results.
+#
 raw_spectrum.Y ./= maximum(raw_spectrum.Y);
+
+# Load isotopic motif input data ================
+#
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 
 # Remove baseline
@@ -295,9 +320,11 @@ all_fit_result_per_ROI = extract_fit_result_per_group(grouped,
 
 # Plot routine ****************************************************************
 
-# A structure to store model value: this struct in only used in plot_fit() function
+# A structure to store model value
 #
-struct ROI_IsotopicModel_ExtractedData
+# CAVEAT:  plot_fit() *Internal* 
+#
+struct _plot_fit_IsotopicModelExtractedData
     Y::AbstractVector
     name::String
     position::Float64
@@ -318,7 +345,7 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
         ROI_model_parameter = local_fit.θ
 
         ROI_spectrum_calibrated = deepcopy(ROI_spectrum)
-        ROI_local_model_data = ROI_IsotopicModel_ExtractedData[]
+        ROI_local_model_data = _plot_fit_IsotopicModelExtractedData[]
         
         visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
             # if a recalibration is performed, record it for future plot
@@ -339,7 +366,7 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
                 #
                 Y_fit = eval_y(m,X,θ)
                 push!(ROI_local_model_data,
-                      ROI_IsotopicModel_ExtractedData(Y_fit,name,position))
+                      _plot_fit_IsotopicModelExtractedData(Y_fit,name,position))
 
                 
                 return false
