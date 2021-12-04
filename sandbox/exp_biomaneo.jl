@@ -510,7 +510,46 @@ all_fit_result_per_ROI = extract_fit_result_per_group(grouped,
                                                       spectrum)
 
 
+# All shape parameters are locally shared within each ROI
+#
+# CAVEAT: for the moment we assume that peak_motif θ = [h,σ] and that
+# top model is a Peak_Motif or a sum of Peak_Motif
+#
+function share_shape_parameters!(all_local_fits::AbstractVector{LocalFit})
 
+    map!(all_local_fits,all_local_fits) do lf
+
+        model = lf.model
+        θ = lf.θ
+        
+        if model isa Peak_Motif || model isa Model2Fit_TaggedModel{<: Peak_Motif}
+            # if only one peak_motif, no needs for sharing
+            return lf
+        end
+
+        # We assume that we have a sum of Peak_Motif.
+        # We check a necessary condition...
+        #
+        @assert model isa NLS_Fit.Model2Fit_Sum "$(typeof(model))"
+
+        indices_to_share = [2:2:length(θ);] # σ1, σ2, ....
+        model_with_shared_parameters = Model2Fit_Shared_Parameters(model,indices_to_share)
+
+        # compute a reasonable initial value for shared parameters: their mean
+        # 
+        θ_shared_initial_value = sum(θ[indices_to_share])
+        θ_shared_initial_value /= length(indices_to_share)
+
+        # update the model θ
+        model_with_shared_parameters_θ = copy(θ)
+        deleteat!(model_with_shared_parameters_θ,indices_to_share)
+        push!(model_with_shared_parameters_θ,θ_shared_initial_value)
+        
+        update_model(lf,model_with_shared_parameters,model_with_shared_parameters_θ)
+    end
+
+    all_local_fits
+end
 
 # Add a calibration shift
 #
@@ -566,7 +605,9 @@ end
 
 # Perform local fit ================
 #
+share_shape_parameters!(all_fit_result_per_ROI)
 add_calibration_shift!(all_fit_result_per_ROI,scale = 10)
+
 local_fit!(all_fit_result_per_ROI)
 
 # Plot result
