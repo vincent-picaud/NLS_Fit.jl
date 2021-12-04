@@ -107,16 +107,16 @@ raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spect
 
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
 
-raw_spectrum.Y ./= maximum(raw_spectrum.Y)
+raw_spectrum.Y ./= maximum(raw_spectrum.Y);
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 
 # Remove baseline
 # ================
 Y_baseline = compute_baseline_snip(raw_spectrum,
                                    snip_halfwindow = 50,
-                                   smoothing_halfwindow = 20)
+                                   smoothing_halfwindow = 20);
 
-spectrum = raw_spectrum - Y_baseline
+spectrum = raw_spectrum - Y_baseline;
 
 begin
     gp = GnuplotScript()
@@ -129,7 +129,7 @@ end
 # Create ROI model & spectrum
 # ================
 grouped = groupbysupport(vect_of_isotopicmotif,by=get_ROI_interval)
-stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spectrum)
+stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spectrum);
 
 # Add a σ law
 # ================
@@ -139,40 +139,40 @@ stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spe
 # 1/ σ_index in θ
 # 2/ position m/z of each isopoic model
 #
-σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models))
-isotopicmotif_centers = map(get_position,grouped.objects)
+σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models));
+isotopicmotif_centers = map(get_position,grouped.objects);
 
-map_mz_to_σ = Map_Affine_Monotonic(1000.0  => 2.0, 3000.0 => 6.0) # the σ map: m/z -> σ(m/z)
+map_mz_to_σ = Map_Affine_Monotonic(1000.0  => 2.0, 3000.0 => 6.0); # the σ map: m/z -> σ(m/z)
 
-stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,σ_index,isotopicmotif_centers)
+stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,σ_index,isotopicmotif_centers);
 
 # Add affine calibration
 # ================
 #
-recalibration_map = Map_Affine(ROI_spectrum.X[1],ROI_spectrum.X[end])
+recalibration_map = Map_Affine(ROI_spectrum.X[1],ROI_spectrum.X[end]);
 
-stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law,recalibration_map)
+stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law,recalibration_map);
 
 # Initialize θ
 # ================
 
 # create θ : h1,...h21, slaw1,slaw2, cal1,cal2
 #
-n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration)
-θ_init = ones(n_θ)
-θ_lb = zeros(n_θ)
-θ_ub = zeros(n_θ) .+ 6
+n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration);
+θ_init = ones(n_θ);
+θ_lb = zeros(n_θ);
+θ_ub = zeros(n_θ) .+ 6;
 θ_init = solve_linear_parameters(stacked_models_σ_law_recalibration,
                                  ROI_spectrum.X,
                                  ROI_spectrum.Y,
                                  θ_init,
-                                 [1:21;])
+                                 [1:21;]);
 
 # Solve the problem
 # ================
-bc = BoundConstraints(θ_lb,θ_ub)
-nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration,ROI_spectrum.X,ROI_spectrum.Y)
-conf = Levenberg_Marquardt_BC_Conf()
+bc = BoundConstraints(θ_lb,θ_ub);
+nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration,ROI_spectrum.X,ROI_spectrum.Y);
+conf = Levenberg_Marquardt_BC_Conf();
 
 result = NLS_Solver.solve(nls,θ_init,bc,conf)
 
@@ -287,7 +287,7 @@ all_fit_result_per_ROI = extract_fit_result_per_group(grouped,
                                                       stacked_models_σ_law_recalibration,
                                                       ROI_spectrum,
                                                       solution(result),
-                                                      spectrum)
+                                                      spectrum);
 
 
 
@@ -503,7 +503,7 @@ all_fit_result_per_ROI = extract_fit_result_per_group(grouped,
                                                       stacked_models_σ_law_recalibration,
                                                       ROI_spectrum,
                                                       solution(result),
-                                                      spectrum)
+                                                      spectrum);
 
 
 # All shape parameters are locally shared within each ROI
@@ -601,11 +601,11 @@ end
 
 # Perform local fit ================
 #
-share_shape_parameters!(all_fit_result_per_ROI)
-add_calibration_shift!(all_fit_result_per_ROI,scale = 10)
+share_shape_parameters!(all_fit_result_per_ROI);
+add_calibration_shift!(all_fit_result_per_ROI,scale = 10);
 
-local_fit!(all_fit_result_per_ROI)
+local_fit!(all_fit_result_per_ROI);
 
 # Plot result
 #
-plot_fit("demo_local.gp",spectrum,all_fit_result_per_ROI)
+plot_fit("demo_local.gp",spectrum,all_fit_result_per_ROI);
