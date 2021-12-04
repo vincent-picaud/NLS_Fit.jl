@@ -57,33 +57,29 @@ end
 
 # ================================================================
 
-# for X int vcat(collect.(ROI_range)...)
-
-#
-# Create a new spectrum restricted to ROI.
-#
-# In the same time return the length of each ROIs
-#
-# Attention: use functions from NLS_Models
-#
-function extract_ROI_spectrum_range_pair(grouped::GroupedBySupport{IsotopicMotif},sp::Spectrum)
-    ROI_interval = group_support_as_interval(grouped)
-    ROI_range = create_range_from_interval(ROI_interval,spectrum.X)
-
-    Spectrum(extract_ROIs(ROI_range,sp.X),
-             extract_ROIs(ROI_range,sp.Y)),
-    length.(ROI_range)
-end 
-
-# ================================================================
-
-# create stacked model and associated ROI spectrum
+# Create stacked model and associated spectrum build from all ROIs juxtaposition
 # 
-function create_stacked_model_ROI_spectrum_pair(grouped::GroupedBySupport{IsotopicMotif},sp_before_ROI::Spectrum)
-    vector_of_models =  create_vector_of_models(grouped)
-    roi_spectrum, roi_lengths = extract_ROI_spectrum_range_pair(grouped,sp_before_ROI)
+function create_stacked_model_ROI_spectrum_pair(grouped::GroupedBySupport{IsotopicMotif},whole_spectrum_before_ROI_stacking::Spectrum)
+    # Create on model per ROI and store these model into a vector
+    #
+    ROI_models =  create_vector_of_models(grouped)
 
-    Model2Fit_Stacked(vector_of_models,roi_lengths),roi_spectrum
+    # Collect all ROIs intervals and deduce their ranges according to
+    # spectrum.X
+    #
+    ROI_intervals = group_support_as_interval(grouped)
+    ROI_ranges = create_range_from_interval(ROI_intervals,whole_spectrum_before_ROI_stacking.X)
+
+    # Extract ROI data
+    #
+    ROI_stacked_spectrum = Spectrum(extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.X),
+                                          extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.Y))
+
+    # Create the stacked models
+    #
+    ROI_lengths = length.(ROI_ranges)
+
+    Model2Fit_Stacked(ROI_models,ROI_lengths), ROI_stacked_spectrum 
 end
 
 # ****************************************************************
@@ -267,7 +263,7 @@ function extract_fit_result_per_group(grouped::GroupedBySupport{IsotopicMotif}, 
                                       θ_fit::AbstractVector,
                                       uncalibrated_spectrum::Spectrum)
 
-    # Perform calibration and remove calbibration model
+    # Perform calibration and remove calibration model
     #
     calibrated_X = eval_calibrated_x(global_model,uncalibrated_spectrum.X,θ_fit)
     global_model_after_calibration = get_calibrated_model(global_model)
