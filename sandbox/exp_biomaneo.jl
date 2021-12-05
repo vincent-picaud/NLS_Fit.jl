@@ -105,11 +105,11 @@ end
 # ================
 
 # 3 spectres problématiques ================
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt")
 
 # with this new version 3120 is ok now! :)
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt")
-raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt")
+raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt")
+# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt")
 
 
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt")
@@ -117,7 +117,10 @@ raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spect
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt")
 
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
+#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
+
+#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Study_1/Spectres8020_Biomaneo_txt/Groupe 3/Homozygote HbE/0000000003_digt_0001_J1_(Manual)_19-12-19_15-03_0001.txt")
+
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
 # raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
 #raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
@@ -138,7 +141,7 @@ vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 # Remove baseline
 # ================
 Y_baseline = compute_baseline_snip(raw_spectrum,
-                                   snip_halfwindow = 50,
+                                   snip_halfwindow = 180,
                                    smoothing_halfwindow = 20);
 
 spectrum = raw_spectrum - Y_baseline;
@@ -146,8 +149,10 @@ spectrum = raw_spectrum - Y_baseline;
 begin
     gp = GnuplotScript()
     id = register_data!(gp,hcat(raw_spectrum.X,raw_spectrum.Y,Y_baseline.Y))
-    plot!(gp,id,"u 1:2 w l t 'raw'")
-    replot!(gp,id,"u 1:3 w l t 'baseline'")
+    free_form(gp,"set style fill transparent solid 0.5 noborder")
+
+    plot!(gp,id,"u 1:2  with filledcurve y1=-0.1 lc rgb 'gray50'  t 'raw'")
+    replot!(gp,id,"u 1:3  with filledcurve y1=-0.1 lc rgb 'gray40'  t 'baseline'")
     write("baseline.gp",gp)
 end
 
