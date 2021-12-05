@@ -249,7 +249,7 @@ function extract_fit_result_per_group_helper(global_model::NLS_Fit.Abstract_Mode
     
     collected_model_per_group = Vector{LocalFit}(undef,0)
     
-    visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,Y,X,θ
+    visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,_,X,θ
         # filter model
         #
         if get_tagged_data_type(model) === EmbeddedData_ROI_Complete_Model
