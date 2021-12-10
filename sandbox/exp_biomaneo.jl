@@ -16,8 +16,6 @@ include("exp_gnuplot.jl")
 #   to ROIs. Embedded data is ROI interval.
 #
 
-
-
 # Used to tag isotopic motif within group
 #
 struct EmbeddedData_IsotopicMotif_Model
@@ -101,53 +99,6 @@ end
 
 # ****************************************************************
 
-# Inputs
-# ================
-
-# 3 spectres problématiques ================
-# spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt"
-
-# with this new version 3120 is ok now! :)
-spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt"
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt"
-
-
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt"
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt"
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt"
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt"
-
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt"
-
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Study_1/Spectres8020_Biomaneo_txt/Groupe 3/Homozygote HbE/0000000003_digt_0001_J1_(Manual)_19-12-19_15-03_0001.txt"
-
-# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt"
-# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt"
-# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt"
-
-# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt"
-
-
-# Normalize spectrum ================
-#
-# TODO: store normalization coef and use it to output final results.
-#
-raw_spectrum = read_spectrum_Biomaneo(spectrum_filename)
-raw_spectrum_max = maximum(raw_spectrum.Y);
-raw_spectrum.Y ./= raw_spectrum_max;
-
-# Load isotopic motif input data ================
-#
-vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
-
-# Remove baseline
-# ================
-Y_baseline = compute_baseline_snip(raw_spectrum,
-    snip_halfwindow = 80,
-    smoothing_halfwindow = 20);
-
-spectrum = raw_spectrum - Y_baseline;
-
 # Note: when using filled plot I get gnuplot warnings:
 # Polygon too complex for filling. ...
 #
@@ -175,65 +126,6 @@ function plot_baseline(output_filename::AbstractString,
 
     nothing
 end
-
-plot_baseline_filename = first(splitext(basename(spectrum_filename))) * "-baseline.gp"
-
-plot_baseline(plot_baseline_filename,
-    raw_spectrum.X,
-    raw_spectrum.Y,
-    Y_baseline.Y,
-    scale_Y = 1 + 0 * raw_spectrum_max)
-
-
-# Create ROI model & spectrum
-# ================
-grouped = groupbysupport(vect_of_isotopicmotif, by = get_ROI_interval)
-stacked_models, ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped, spectrum);
-
-# Add a σ law
-# ================
-
-# The created model is a succession of isotopic model, θ=(h,σ)
-# now we put an affine model for σ. For that we need:
-# 1/ σ_index in θ
-# 2/ position m/z of each isopoic model
-#
-σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models));
-isotopicmotif_centers = map(get_position, grouped.objects);
-
-map_mz_to_σ = Map_Affine_Monotonic(1000.0 => 2.0, 3000.0 => 6.0); # the σ map: m/z -> σ(m/z)
-
-stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models, map_mz_to_σ, σ_index, isotopicmotif_centers);
-
-# Add affine calibration
-# ================
-#
-recalibration_map = Map_Affine(ROI_spectrum.X[1], ROI_spectrum.X[end]);
-
-stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law, recalibration_map);
-
-# Initialize θ
-# ================
-
-# create θ : h1,...h21, slaw1,slaw2, cal1,cal2
-#
-n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration);
-θ_init = ones(n_θ);
-θ_lb = zeros(n_θ);
-θ_ub = zeros(n_θ) .+ 6;
-θ_init = solve_linear_parameters(stacked_models_σ_law_recalibration,
-    ROI_spectrum.X,
-    ROI_spectrum.Y,
-    θ_init,
-    [1:21;]);
-
-# Solve the problem
-# ================
-bc = BoundConstraints(θ_lb, θ_ub);
-nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration, ROI_spectrum.X, ROI_spectrum.Y);
-conf = Levenberg_Marquardt_BC_Conf();
-
-result = NLS_Solver.solve(nls, θ_init, bc, conf)
 
 # ****************************************************************
 
@@ -336,7 +228,7 @@ function extract_fit_result_per_group(global_model::Model2Fit_Recalibration,
     global_model_after_calibration = get_calibrated_model(global_model)
     global_model_after_calibration_θ_fit = get_calibrated_model_θ(global_model, θ_fit)
 
-    calibrated_spectrum = Spectrum(calibrated_X, spectrum.Y)
+    calibrated_spectrum = Spectrum(calibrated_X, uncalibrated_spectrum.Y)
 
     # Process each ROI using the recalibrated spectrum
     #
@@ -347,16 +239,6 @@ function extract_fit_result_per_group(global_model::Model2Fit_Recalibration,
 
     local_fit_vect
 end
-
-
-all_fit_result_per_ROI = extract_fit_result_per_group(stacked_models_σ_law_recalibration,
-    ROI_spectrum,
-    solution(result),
-    spectrum);
-
-
-
-
 
 # Plot routine ****************************************************************
 
@@ -475,13 +357,6 @@ function plot_fit(gp_output_file::String,
     gp
 end
 
-
-
-# Plot result with global calibration
-#
-plot_global_fit_filename = first(splitext(basename(spectrum_filename))) * "-global-fit.gp"
-plot_fit(plot_global_fit_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
-
 # ****************************************************************
 # Now local fit
 # ****************************************************************
@@ -571,7 +446,6 @@ function local_fit!(all_local_fits::AbstractVector{LocalFit})
         ub[end] = θ[end] + 1 # valid if add_calibration_shift! scale=1
         # 
         bc = BoundConstraints(lb, ub)
-        println(bc)
 
         ROI_model = local_fit.model
         ROI_X = local_fit.ROI_calibrated_spectrum.X
@@ -590,7 +464,7 @@ function local_fit!(all_local_fits::AbstractVector{LocalFit})
         end
     end
 
-    all_fit_result_per_ROI
+    all_local_fits
 end
 
 # Extract data to be CSV exported
@@ -663,25 +537,6 @@ function export_csv(output_filename::AbstractString,
     nothing 
 end 
 
-# Perform local fit ================
-#
-share_shape_parameters!(all_fit_result_per_ROI);
-add_calibration_shift!(all_fit_result_per_ROI);
-
-local_fit!(all_fit_result_per_ROI);
-
-
-# Plot result
-#
-plot_filename = first(splitext(basename(spectrum_filename))) * ".gp"
-plot_fit(plot_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
-
-# Export csv file
-#
-csv_filename = first(splitext(basename(spectrum_filename))) * ".csv"
-export_csv(csv_filename, all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
-
-
 # ****************************************************************
 # Group all together
 # ****************************************************************
@@ -724,7 +579,7 @@ function process_spectrum(output_filename::AbstractString,
     raw_spectrum.Y ./= raw_spectrum_max
 
     # Remove baseline ================
-    # 
+    #
     Y_baseline = compute_baseline_snip(raw_spectrum,
                                        snip_halfwindow = snip_halfwindow,
                                        smoothing_halfwindow = smoothing_halfwindow)
@@ -741,6 +596,8 @@ function process_spectrum(output_filename::AbstractString,
                       raw_spectrum.Y,
                       Y_baseline.Y,
                       scale_Y = 1 + 0 * raw_spectrum_max)
+
+        @info "Created: $plot_baseline_filename"
     end
 
     # Create ROIs ================
@@ -793,6 +650,7 @@ function process_spectrum(output_filename::AbstractString,
     stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law, recalibration_map)
 
     # Solve the NLS problem ================
+    #
     
     # Initialize θ ----------------
     # 
@@ -847,6 +705,7 @@ function process_spectrum(output_filename::AbstractString,
     if plot_global_fit_p
         plot_global_fit_filename = first(splitext(basename(output_filename))) * "-global-fit.gp"
         plot_fit(plot_global_fit_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
+        @info "Created: $plot_global_fit_filename"
     end
 
     # Perform local fits ================
@@ -874,6 +733,8 @@ function process_spectrum(output_filename::AbstractString,
     if plot_local_fit_p
         plot_filename = first(splitext(basename(output_filename))) * ".gp"
         plot_fit(plot_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
+
+        @info "Created: $plot_filename"
     end
     
     # Export isotopic motif heights in a CSV file
@@ -881,16 +742,50 @@ function process_spectrum(output_filename::AbstractString,
     if csv_export_p
         csv_filename = first(splitext(basename(output_filename))) * ".csv"
         export_csv(csv_filename, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
+
+        @info "Created: $csv_filename"
     end
     
     nothing 
 end
 
+# ****************************************************************
+# Demo 
+# ****************************************************************
+
+# Input spectrum ****************
+# 
+
+# 3 spectres problématiques ================
+# spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt"
+
+# with this new version 3120 is ok now! :)
+spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt"
 
 
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt"
 
-# Demo
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt"
+
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Study_1/Spectres8020_Biomaneo_txt/Groupe 3/Homozygote HbE/0000000003_digt_0001_J1_(Manual)_19-12-19_15-03_0001.txt"
+
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt"
+# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt"
+# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt"
+
+# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt"
+
+
+# Load Input ****************
+#
 raw_spectrum = read_spectrum_Biomaneo(spectrum_filename)
 vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 
+# Process! ****************
+#
 process_spectrum("test",raw_spectrum,vect_of_isotopicmotif)
+
