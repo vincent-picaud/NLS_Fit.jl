@@ -154,7 +154,8 @@ begin
 
     plot!(gp,id,"u 1:2  with filledcurve y1=-0.1 lc rgb 'gray50'  t 'raw'")
     replot!(gp,id,"u 1:3  with filledcurve y1=-0.1 lc rgb 'gray40'  t 'baseline'")
-    write("baseline.gp",gp)
+    plot_baseline_filename = first(splitext(basename(spectrum_filename)))*"-baseline.gp"
+    write(plot_baseline_filename ,gp)
 end
 
 # Create ROI model & spectrum
