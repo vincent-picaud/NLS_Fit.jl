@@ -680,3 +680,217 @@ plot_fit(plot_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum
 #
 csv_filename = first(splitext(basename(spectrum_filename))) * ".csv"
 export_csv(csv_filename, all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
+
+
+# ****************************************************************
+# Group all together
+# ****************************************************************
+#
+function process_spectrum(output_filename::AbstractString,
+                          raw_spectrum::Spectrum,
+                          vect_of_isotopicmotif::AbstractVector{IsotopicMotif})
+    
+    # Algorithm parameters ================
+    #
+
+    # Baseline ----------------
+    #
+    snip_halfwindow = 80
+    smoothing_halfwindow = 20
+    plot_baseline_p = true
+
+    # σ law ----------------
+    #
+    # Initial values for the affine law: 
+    #
+    init_σ_A = 1000.0 => 2.0 # X_a => σ_a
+    init_σ_B = 3000.0 => 6.0 # X_b => σ_b
+
+    # Plot global fit ----------------
+    #
+    plot_global_fit_p = true
+
+    # Plot local fit ----------------
+    #
+    plot_local_fit_p = true
+
+    # Export CSV file ----------------
+    #
+    csv_export_p = true
+    
+    # Normalize spectrum ================
+    #
+    raw_spectrum_max = maximum(raw_spectrum.Y)
+    raw_spectrum.Y ./= raw_spectrum_max
+
+    # Remove baseline ================
+    # 
+    Y_baseline = compute_baseline_snip(raw_spectrum,
+                                       snip_halfwindow = snip_halfwindow,
+                                       smoothing_halfwindow = smoothing_halfwindow)
+    
+    spectrum = raw_spectrum - Y_baseline
+
+    # Plot baseline ================
+    #
+    if plot_baseline_p
+        plot_baseline_filename = first(splitext(basename(output_filename))) * "-baseline.gp"
+
+        plot_baseline(plot_baseline_filename,
+                      raw_spectrum.X,
+                      raw_spectrum.Y,
+                      Y_baseline.Y,
+                      scale_Y = 1 + 0 * raw_spectrum_max)
+    end
+
+    # Create ROIs ================
+    #
+    # Using IsotopicMotif domain we group overlapping regions
+    #
+    # The result is a vector of ROIs containing one or more isotopic
+    # motif per ROI.
+    #
+    grouped = groupbysupport(vect_of_isotopicmotif, by = get_ROI_interval)
+
+    # Create stacked model ================
+    #
+    # We first start by creating a model for each ROI.
+    #
+    # Then we create a stacked model with its associated stacked
+    # spectrum.
+    #
+    # The created model is a succession of isotopic model:
+    #
+    # θ= (h1, σ1, h2, σ2, ...,  h_niso, σ_niso ), niso = number of isotopic models
+    #
+    stacked_models, ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped, spectrum)
+
+    # Group all σ and impose an affine dependence ================
+    #
+    # For that we need the index of each σ_i and the position of its
+    # associated isotopic motif
+    #
+    σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models))
+    isotopicmotif_centers = map(get_position, grouped.objects)
+
+    # The affine law for the σ ----------------
+    #
+    map_mz_to_σ = Map_Affine_Monotonic(init_σ_A, init_σ_B) # the σ map: m/z -> σ(m/z)
+
+    # The new model with θ = (h1, h2, ... h_niso, σa, σb) ----------------
+    #
+    # where σa, σb are the parametrization of the affine law
+    #
+    stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models, map_mz_to_σ, σ_index, isotopicmotif_centers)
+
+
+    # Add affine calibration ================
+    #
+    # Create a calibrable model with two extra parameters θcal_a, θcal_b
+    #
+    recalibration_map = Map_Affine(ROI_spectrum.X[1], ROI_spectrum.X[end])
+
+    stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law, recalibration_map)
+
+    # Solve the NLS problem ================
+    
+    # Initialize θ ----------------
+    # 
+    # Create θ : h1,...h_niso, σa, σb ,θcal_a, θcal_b
+    #
+    # By construction all parameters θ are already scaled and their initial values are 1.
+    #
+    # The lower bound is zero and we arbitrary set upper bound +6
+    #
+    n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration)
+    θ_init = ones(n_θ)
+    θ_lb = zeros(n_θ)
+    θ_ub = zeros(n_θ) .+ 6
+
+    # Solve a *linear* problem ----------------
+    #
+    # heights parameters h1,...h_niso, are linear. We find their
+    # value, to improve initial value of the nonlinear problem.
+    #
+    n_iso = object_size(grouped) 
+    θ_init = solve_linear_parameters(stacked_models_σ_law_recalibration,
+                                     ROI_spectrum.X,
+                                     ROI_spectrum.Y,
+                                     θ_init,
+                                     [1:n_iso;])
+
+    # Solve the NLS problem ----------------
+    # 
+    bc = BoundConstraints(θ_lb, θ_ub)
+    nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration, ROI_spectrum.X, ROI_spectrum.Y)
+    conf = Levenberg_Marquardt_BC_Conf()
+
+    result = NLS_Solver.solve(nls, θ_init, bc, conf)
+
+    if !NLS_Solver.converged(result)
+        @warn "Failed to solve the *global* NLS problem"
+    end
+    
+    # Extract data from the global fit ================
+    #
+    # This extract a vector LocalFit containing all the necessary data
+    # to plot ROI and to perform local fit (one per ROI).
+    #
+    all_fit_result_per_ROI = extract_fit_result_per_group(stacked_models_σ_law_recalibration,
+                                                          ROI_spectrum,
+                                                          solution(result),
+                                                          spectrum)
+    
+
+    # Plot global fit solution ================
+    #
+    if plot_global_fit_p
+        plot_global_fit_filename = first(splitext(basename(output_filename))) * "-global-fit.gp"
+        plot_fit(plot_global_fit_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
+    end
+
+    # Perform local fits ================
+    #
+    # We solve a bunch a small NLS problems, one per ROI.
+    # This improve results
+    #
+    # CAVEAT:  all these function perform an in-place update of all_fit_result_per_ROI.
+    #
+    
+    # Modify model such that they share on shape factor σ per ROI.
+    #
+    share_shape_parameters!(all_fit_result_per_ROI)
+
+    # Add a simple shift calibration, one per ROI
+    #
+    add_calibration_shift!(all_fit_result_per_ROI)
+
+    # Local fits!
+    #
+    local_fit!(all_fit_result_per_ROI)
+
+    # Plot local fit results ================
+    #
+    if plot_local_fit_p
+        plot_filename = first(splitext(basename(output_filename))) * ".gp"
+        plot_fit(plot_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
+    end
+    
+    # Export isotopic motif heights in a CSV file
+    #
+    if csv_export_p
+        csv_filename = first(splitext(basename(output_filename))) * ".csv"
+        export_csv(csv_filename, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
+    end
+    
+    nothing 
+end
+
+
+
+
+# Demo
+raw_spectrum = read_spectrum_Biomaneo(spectrum_filename)
+vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
+
+process_spectrum("test",raw_spectrum,vect_of_isotopicmotif)
