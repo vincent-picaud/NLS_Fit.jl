@@ -440,7 +440,8 @@ end
 
 # Plot result with global calibration
 #
-plot_fit("demo.gp",spectrum, all_fit_result_per_ROI)
+plot_global_fit_filename = first(splitext(basename(spectrum_filename)))*"-global-fit.gp"
+plot_fit(plot_global_fit_filename ,spectrum, all_fit_result_per_ROI)
 
 # ****************************************************************
 # Now local fit
