@@ -31,32 +31,32 @@ end
 #
 struct EmbeddedData_ROI_Complete_Model
     # maybe one can add number of iso motif
-    _group_interval::Interval 
+    _group_interval::Interval
 end
 
 # Create ROI model
 #
 import NLS_Models: create_model
-function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif},idx_group::Int)
+function NLS_Models.create_model(grouped::GroupedBySupport{IsotopicMotif}, idx_group::Int)
 
     model = Model2Fit_Empty()
 
-    n_isotopicmotif = objects_in_group_size(grouped,idx_group)
+    n_isotopicmotif = objects_in_group_size(grouped, idx_group)
     for idx_isotopicmotif in 1:n_isotopicmotif
-        isotopic_motif = get_object(grouped,idx_group,idx_isotopicmotif)
+        isotopic_motif = get_object(grouped, idx_group, idx_isotopicmotif)
 
         profile_matrix = get_profile_matrix(isotopic_motif)
 
         metadata = EmbeddedData_IsotopicMotif_Model(get_name(isotopic_motif),
-                                                    get_position(isotopic_motif))
-        
-        model += Model2Fit_TaggedModel(Peak_Motif(Gaussian_Peak(),profile_matrix),
-                                       metadata)
+            get_position(isotopic_motif))
+
+        model += Model2Fit_TaggedModel(Peak_Motif(Gaussian_Peak(), profile_matrix),
+            metadata)
     end
 
-    group_interval = group_support_as_interval(grouped,idx_group)
-    model = Model2Fit_TaggedModel(model,EmbeddedData_ROI_Complete_Model(group_interval))
-   
+    group_interval = group_support_as_interval(grouped, idx_group)
+    model = Model2Fit_TaggedModel(model, EmbeddedData_ROI_Complete_Model(group_interval))
+
     model
 end
 
@@ -64,8 +64,8 @@ end
 #
 function create_vector_of_models(grouped::GroupedBySupport{IsotopicMotif})
     n_group = group_size(grouped)
-    map(idx_group -> create_model(grouped,idx_group), 1:n_group)
-end 
+    map(idx_group -> create_model(grouped, idx_group), 1:n_group)
+end
 
 # ================================================================
 
@@ -76,27 +76,27 @@ end
 # - spectrum: the whole spectrum, before ROI stacking. The returned
 #   spectrum is this spectrum restricted to points belonging to ROI.
 #
-function create_stacked_model_ROI_spectrum_pair(grouped::GroupedBySupport{IsotopicMotif},whole_spectrum_before_ROI_stacking::Spectrum)
+function create_stacked_model_ROI_spectrum_pair(grouped::GroupedBySupport{IsotopicMotif}, whole_spectrum_before_ROI_stacking::Spectrum)
     # Create on model per ROI and store these model into a vector
     #
-    ROI_models =  create_vector_of_models(grouped)
+    ROI_models = create_vector_of_models(grouped)
 
     # Collect all ROIs intervals and deduce their ranges according to
     # spectrum.X
     #
     ROI_intervals = group_support_as_interval(grouped)
-    ROI_ranges = create_range_from_interval(ROI_intervals,whole_spectrum_before_ROI_stacking.X)
+    ROI_ranges = create_range_from_interval(ROI_intervals, whole_spectrum_before_ROI_stacking.X)
 
     # Extract ROI data
     #
-    ROI_stacked_spectrum = Spectrum(extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.X),
-                                    extract_ROIs(ROI_ranges,whole_spectrum_before_ROI_stacking.Y))
+    ROI_stacked_spectrum = Spectrum(extract_ROIs(ROI_ranges, whole_spectrum_before_ROI_stacking.X),
+        extract_ROIs(ROI_ranges, whole_spectrum_before_ROI_stacking.Y))
 
     # Create the stacked models
     #
     ROI_lengths = length.(ROI_ranges)
 
-    Model2Fit_Stacked(ROI_models,ROI_lengths), ROI_stacked_spectrum 
+    Model2Fit_Stacked(ROI_models, ROI_lengths), ROI_stacked_spectrum
 end
 
 # ****************************************************************
@@ -108,7 +108,7 @@ end
 # spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt"
 
 # with this new version 3120 is ok now! :)
-spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt"
+spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt"
 # spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt"
 
 
@@ -143,8 +143,8 @@ vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 # Remove baseline
 # ================
 Y_baseline = compute_baseline_snip(raw_spectrum,
-                                   snip_halfwindow = 80,
-                                   smoothing_halfwindow = 20);
+    snip_halfwindow = 80,
+    smoothing_halfwindow = 20);
 
 spectrum = raw_spectrum - Y_baseline;
 
@@ -154,41 +154,41 @@ spectrum = raw_spectrum - Y_baseline;
 # That's the reason why I use usual plot (without filled curves)
 #
 function plot_baseline(output_filename::AbstractString,
-                       sp_X::AbstractVector,
-                       sp_Y::AbstractVector,
-                       sp_baseline_Y::AbstractVector;
-                       scale_Y::Real = 1)
-    @assert length(sp_X)==length(sp_Y)
-    @assert length(sp_X)==length(sp_baseline_Y)
-    
+    sp_X::AbstractVector,
+    sp_Y::AbstractVector,
+    sp_baseline_Y::AbstractVector;
+    scale_Y::Real = 1)
+    @assert length(sp_X) == length(sp_Y)
+    @assert length(sp_X) == length(sp_baseline_Y)
+
     gp = GnuplotScript()
 
-    set_title(gp,output_filename)
-    
-    id = register_data!(gp,hcat(sp_X,scale_Y*sp_Y,scale_Y*sp_baseline_Y))
+    set_title(gp, output_filename)
 
-    plot!(gp,id,"u 1:2  w l  t 'raw'")
-    replot!(gp,id,"u 1:3  w l lw 2  t 'baseline'")
-    plot_baseline_filename = first(splitext(basename(spectrum_filename)))*"-baseline.gp"
+    id = register_data!(gp, hcat(sp_X, scale_Y * sp_Y, scale_Y * sp_baseline_Y))
 
-    write(output_filename ,gp)
+    plot!(gp, id, "u 1:2  w l  t 'raw'")
+    replot!(gp, id, "u 1:3  w l lw 2  t 'baseline'")
+    plot_baseline_filename = first(splitext(basename(spectrum_filename))) * "-baseline.gp"
+
+    write(output_filename, gp)
 
     nothing
 end
 
-plot_baseline_filename = first(splitext(basename(spectrum_filename)))*"-baseline.gp"
+plot_baseline_filename = first(splitext(basename(spectrum_filename))) * "-baseline.gp"
 
 plot_baseline(plot_baseline_filename,
-              raw_spectrum.X,
-              raw_spectrum.Y,
-              Y_baseline.Y,
-              scale_Y = 1+0*raw_spectrum_max)
+    raw_spectrum.X,
+    raw_spectrum.Y,
+    Y_baseline.Y,
+    scale_Y = 1 + 0 * raw_spectrum_max)
 
 
 # Create ROI model & spectrum
 # ================
-grouped = groupbysupport(vect_of_isotopicmotif,by=get_ROI_interval)
-stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spectrum);
+grouped = groupbysupport(vect_of_isotopicmotif, by = get_ROI_interval)
+stacked_models, ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped, spectrum);
 
 # Add a σ law
 # ================
@@ -199,18 +199,18 @@ stacked_models,ROI_spectrum = create_stacked_model_ROI_spectrum_pair(grouped,spe
 # 2/ position m/z of each isopoic model
 #
 σ_index = collect(2:2:NLS_Fit.parameter_size(stacked_models));
-isotopicmotif_centers = map(get_position,grouped.objects);
+isotopicmotif_centers = map(get_position, grouped.objects);
 
-map_mz_to_σ = Map_Affine_Monotonic(1000.0  => 2.0, 3000.0 => 6.0); # the σ map: m/z -> σ(m/z)
+map_mz_to_σ = Map_Affine_Monotonic(1000.0 => 2.0, 3000.0 => 6.0); # the σ map: m/z -> σ(m/z)
 
-stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models,map_mz_to_σ,σ_index,isotopicmotif_centers);
+stacked_models_σ_law = Model2Fit_Mapped_Parameters(stacked_models, map_mz_to_σ, σ_index, isotopicmotif_centers);
 
 # Add affine calibration
 # ================
 #
-recalibration_map = Map_Affine(ROI_spectrum.X[1],ROI_spectrum.X[end]);
+recalibration_map = Map_Affine(ROI_spectrum.X[1], ROI_spectrum.X[end]);
 
-stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law,recalibration_map);
+stacked_models_σ_law_recalibration = Model2Fit_Recalibration(stacked_models_σ_law, recalibration_map);
 
 # Initialize θ
 # ================
@@ -222,18 +222,18 @@ n_θ = NLS_Fit.parameter_size(stacked_models_σ_law_recalibration);
 θ_lb = zeros(n_θ);
 θ_ub = zeros(n_θ) .+ 6;
 θ_init = solve_linear_parameters(stacked_models_σ_law_recalibration,
-                                 ROI_spectrum.X,
-                                 ROI_spectrum.Y,
-                                 θ_init,
-                                 [1:21;]);
+    ROI_spectrum.X,
+    ROI_spectrum.Y,
+    θ_init,
+    [1:21;]);
 
 # Solve the problem
 # ================
-bc = BoundConstraints(θ_lb,θ_ub);
-nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration,ROI_spectrum.X,ROI_spectrum.Y);
+bc = BoundConstraints(θ_lb, θ_ub);
+nls = NLS_ForwardDiff_From_Model2Fit(stacked_models_σ_law_recalibration, ROI_spectrum.X, ROI_spectrum.Y);
 conf = Levenberg_Marquardt_BC_Conf();
 
-result = NLS_Solver.solve(nls,θ_init,bc,conf)
+result = NLS_Solver.solve(nls, θ_init, bc, conf)
 
 # ****************************************************************
 
@@ -243,22 +243,22 @@ Base.@kwdef struct LocalFit
     data::EmbeddedData_ROI_Complete_Model
     model::NLS_Fit.Abstract_Model2Fit
     ROI_calibrated_spectrum::Spectrum # CAVEAT: do not replace by
-                                      # range, as this allows us to
-                                      # use local recalibration
+    # range, as this allows us to
+    # use local recalibration
     θ::AbstractVector
 end
 
 # Allows model modification, see:
 #     add_calibration_shift()
 # for instance.
-function update_model(lf::LocalFit,new_model::NLS_Fit.Abstract_Model2Fit,new_θ::AbstractVector)
+function update_model(lf::LocalFit, new_model::NLS_Fit.Abstract_Model2Fit, new_θ::AbstractVector)
     @assert NLS_Fit.parameter_size(new_model) == length(new_θ)
-    
+
     LocalFit(data = lf.data,
-             model = new_model,
-             ROI_calibrated_spectrum = lf.ROI_calibrated_spectrum,
-             θ = new_θ)
-end 
+        model = new_model,
+        ROI_calibrated_spectrum = lf.ROI_calibrated_spectrum,
+        θ = new_θ)
+end
 
 # Extract fit result, grouping model per group and providing the right X,Y (after calibration)
 #
@@ -272,42 +272,42 @@ end
 # type checking
 #
 function extract_fit_result_per_group_helper(global_model::NLS_Fit.Abstract_Model2Fit,
-                                             ROI_spectrum::Spectrum,
-                                             θ_fit::AbstractVector,
-                                             calibrated_spectrum::Spectrum)
-    
-    collected_model_per_group = Vector{LocalFit}(undef,0)
-    
-    visit(global_model, ROI_spectrum.Y,ROI_spectrum.X, θ_fit) do model,_,X,θ
+    ROI_spectrum::Spectrum,
+    θ_fit::AbstractVector,
+    calibrated_spectrum::Spectrum)
+
+    collected_model_per_group = Vector{LocalFit}(undef, 0)
+
+    visit(global_model, ROI_spectrum.Y, ROI_spectrum.X, θ_fit) do model, _, X, θ
         # filter model
         #
         if get_tagged_data_type(model) === EmbeddedData_ROI_Complete_Model
             # process local model 
-            data  = get_tagged_data(model)
+            data = get_tagged_data(model)
             model = get_tagged_model(model)
-            
+
             # extract the right ROIs: compared to our
             # initial ROI_spectrum, the recalibration
             # procedure may have changed ROI range when
             # computed from calibrates_spectrum
             #
             group_interval = data._group_interval
-            group_range =  create_range_from_interval(group_interval,calibrated_spectrum.X)
+            group_range = create_range_from_interval(group_interval, calibrated_spectrum.X)
             ROI_calibrated_spectrum = calibrated_spectrum[group_range] # TODO: implement spectrum view
-            
+
             # store the result
             #
             push!(collected_model_per_group,
-                  LocalFit(data = data,
-                           model = model,
-                           ROI_calibrated_spectrum = ROI_calibrated_spectrum,
-                           θ=θ))
+                LocalFit(data = data,
+                    model = model,
+                    ROI_calibrated_spectrum = ROI_calibrated_spectrum,
+                    θ = θ))
             return false
         end
-        
+
         true
     end
-    
+
     collected_model_per_group
 end
 
@@ -316,33 +316,33 @@ end
 #    extract_fit_result_per_group_calibrated(...)
 #
 function extract_fit_result_per_group(global_model::Model2Fit_Recalibration,
-                                      ROI_spectrum::Spectrum,
-                                      θ_fit::AbstractVector,
-                                      uncalibrated_spectrum::Spectrum)
+    ROI_spectrum::Spectrum,
+    θ_fit::AbstractVector,
+    uncalibrated_spectrum::Spectrum)
 
     # Perform calibration and remove calibration model
     #
-    calibrated_X = eval_calibrated_x(global_model,uncalibrated_spectrum.X,θ_fit)
+    calibrated_X = eval_calibrated_x(global_model, uncalibrated_spectrum.X, θ_fit)
     global_model_after_calibration = get_calibrated_model(global_model)
-    global_model_after_calibration_θ_fit = get_calibrated_model_θ(global_model,θ_fit)
-    
-    calibrated_spectrum = Spectrum(calibrated_X,spectrum.Y)
+    global_model_after_calibration_θ_fit = get_calibrated_model_θ(global_model, θ_fit)
+
+    calibrated_spectrum = Spectrum(calibrated_X, spectrum.Y)
 
     # Process each ROI using the recalibrated spectrum
     #
     local_fit_vect = extract_fit_result_per_group_helper(global_model_after_calibration,
-                                                         ROI_spectrum,
-                                                         global_model_after_calibration_θ_fit,
-                                                         calibrated_spectrum)
+        ROI_spectrum,
+        global_model_after_calibration_θ_fit,
+        calibrated_spectrum)
 
     local_fit_vect
-end 
+end
 
 
 all_fit_result_per_ROI = extract_fit_result_per_group(stacked_models_σ_law_recalibration,
-                                                      ROI_spectrum,
-                                                      solution(result),
-                                                      spectrum);
+    ROI_spectrum,
+    solution(result),
+    spectrum);
 
 
 
@@ -360,12 +360,12 @@ struct _plot_fit_IsotopicModelExtractedData
     position::Float64
 end
 
-function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit};scale_Y::Real = 1)
+function plot_fit(gp::GnuplotScript, local_fit_vect::AbstractVector{LocalFit}; scale_Y::Real = 1)
 
     # Transparent
     #
-    free_form(gp,"set style fill transparent solid 0.5 noborder")
-    
+    free_form(gp, "set style fill transparent solid 0.5 noborder")
+
     # Plot local fits result
     #
     for local_fit in local_fit_vect
@@ -376,14 +376,14 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit};sca
 
         ROI_spectrum_calibrated = deepcopy(ROI_spectrum)
         ROI_local_model_data = _plot_fit_IsotopicModelExtractedData[]
-        
-        visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
+
+        visit(ROI_model, ROI_spectrum.Y, ROI_spectrum.X, ROI_model_parameter) do m, Y, X, θ
             # if a recalibration is performed, record it for future plot
             if m isa NLS_Fit.Model2Fit_Recalibration
-                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ), Y)
+                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m, X, θ), Y)
                 return true
             end
-            
+
             if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
                 # get isotopic name & position using tagged data
                 #
@@ -394,11 +394,11 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit};sca
                 # compute model value and store it for future use
                 # (plotting...)
                 #
-                Y_fit = eval_y(m,X,θ)
+                Y_fit = eval_y(m, X, θ)
                 push!(ROI_local_model_data,
-                      _plot_fit_IsotopicModelExtractedData(Y_fit,name,position))
+                    _plot_fit_IsotopicModelExtractedData(Y_fit, name, position))
 
-                
+
                 return false
             end
             true
@@ -410,67 +410,67 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit};sca
         #
         #    "curve number" <-> index of all_ROI_isotopicModel_extractedData
         #
-        data = hcat( (scale_Y*isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
-                     ROI_spectrum_calibrated.X,
-                     scale_Y*ROI_spectrum_calibrated.Y)
-        data_m = size(data,2)
-        data_m_last = data_m -2 # number of the last model
-        data_m_X = data_m-1
+        data = hcat((scale_Y * isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data)...,
+            ROI_spectrum_calibrated.X,
+            scale_Y * ROI_spectrum_calibrated.Y)
+        data_m = size(data, 2)
+        data_m_last = data_m - 2 # number of the last model
+        data_m_X = data_m - 1
         data_m_Y = data_m
-        
-        data_id = register_data!(gp,data)
-        replot!(gp,data_id,"u $data_m_X:$data_m_Y with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
+
+        data_id = register_data!(gp, data)
+        replot!(gp, data_id, "u $data_m_X:$data_m_Y with filledcurve y1=-0.1 lc rgb 'gray90' notitle")
 
         for j in 1:data_m_last
-            name     = ROI_local_model_data[j].name
+            name = ROI_local_model_data[j].name
             position = ROI_local_model_data[j].position
 
-            replot!(gp,data_id,"u $data_m_X:$j w l lw 2 t '$name'")
-                            # plot the vertical 
-                
-            add_vertical_line!(gp,position,name=name)
+            replot!(gp, data_id, "u $data_m_X:$j w l lw 2 t '$name'")
+            # plot the vertical 
+
+            add_vertical_line!(gp, position, name = name)
         end
 
         # Sum all
         #    reduce((l,r)->l*"+"*r,map(x->"\$$x",1:4))
         # produce "\$1+\$2+\$3+\$4"
         #
-        if data_m_last>1
-            cmd_str = reduce((l,r)->l*"+"*r,map(x->"\$$x",1:data_m_last))
-            cmd_str = "u $data_m_X:("*cmd_str*") w l dt 3 lc rgb 'blue' notitle"
-            replot!(gp,data_id,cmd_str)
-        end 
+        if data_m_last > 1
+            cmd_str = reduce((l, r) -> l * "+" * r, map(x -> "\$$x", 1:data_m_last))
+            cmd_str = "u $data_m_X:(" * cmd_str * ") w l dt 3 lc rgb 'blue' notitle"
+            replot!(gp, data_id, cmd_str)
+        end
     end
 
     gp
 end
 
 function plot_fit(gp_output_file::String,
-                  uncalibrated_spectrum::Spectrum,
-                  local_fit_vect::AbstractVector{LocalFit};
-                  scale_Y::Number = 1)
+    uncalibrated_spectrum::Spectrum,
+    local_fit_vect::AbstractVector{LocalFit};
+    scale_Y::Number = 1)
     gp = GnuplotScript()
 
-        
+
     # set title
     # 
-    free_form(gp,"set title '$gp_output_file' noenhanced")
+    free_form(gp, "set title '$gp_output_file' noenhanced")
 
-    sp_id = register_data!(gp,hcat(uncalibrated_spectrum.X,scale_Y * uncalibrated_spectrum.Y))
-    replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' t 'uncalibrated spectrum'")
+    sp_id = register_data!(gp, hcat(uncalibrated_spectrum.X, scale_Y * uncalibrated_spectrum.Y))
+    replot!(gp, sp_id, "u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' t 'uncalibrated spectrum'")
 
-    plot_fit(gp,local_fit_vect,scale_Y = scale_Y)
-    write(gp_output_file,gp)
+    plot_fit(gp, local_fit_vect, scale_Y = scale_Y)
+    write(gp_output_file, gp)
 
     gp
-end 
+end
 
 
 
 # Plot result with global calibration
 #
-plot_global_fit_filename = first(splitext(basename(spectrum_filename)))*"-global-fit.gp"
-plot_fit(plot_global_fit_filename ,spectrum, all_fit_result_per_ROI,scale_Y = raw_spectrum_max)
+plot_global_fit_filename = first(splitext(basename(spectrum_filename))) * "-global-fit.gp"
+plot_fit(plot_global_fit_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max)
 
 # ****************************************************************
 # Now local fit
@@ -483,12 +483,12 @@ plot_fit(plot_global_fit_filename ,spectrum, all_fit_result_per_ROI,scale_Y = ra
 #
 function share_shape_parameters!(all_local_fits::AbstractVector{LocalFit})
 
-    map!(all_local_fits,all_local_fits) do lf
+    map!(all_local_fits, all_local_fits) do lf
 
         model = lf.model
         θ = lf.θ
-        
-        if model isa Peak_Motif || model isa Model2Fit_TaggedModel{<: Peak_Motif}
+
+        if model isa Peak_Motif || model isa Model2Fit_TaggedModel{<:Peak_Motif}
             # if only one peak_motif, no needs for sharing
             return lf
         end
@@ -499,7 +499,7 @@ function share_shape_parameters!(all_local_fits::AbstractVector{LocalFit})
         @assert model isa NLS_Fit.Model2Fit_Sum "$(typeof(model))"
 
         indices_to_share = [2:2:length(θ);] # σ1, σ2, ....
-        model_with_shared_parameters = Model2Fit_Shared_Parameters(model,indices_to_share)
+        model_with_shared_parameters = Model2Fit_Shared_Parameters(model, indices_to_share)
 
         # compute a reasonable initial value for shared parameters: their mean
         # 
@@ -508,10 +508,10 @@ function share_shape_parameters!(all_local_fits::AbstractVector{LocalFit})
 
         # update the model θ
         model_with_shared_parameters_θ = copy(θ)
-        deleteat!(model_with_shared_parameters_θ,indices_to_share)
-        push!(model_with_shared_parameters_θ,θ_shared_initial_value)
-        
-        update_model(lf,model_with_shared_parameters,model_with_shared_parameters_θ)
+        deleteat!(model_with_shared_parameters_θ, indices_to_share)
+        push!(model_with_shared_parameters_θ, θ_shared_initial_value)
+
+        update_model(lf, model_with_shared_parameters, model_with_shared_parameters_θ)
     end
 
     all_local_fits
@@ -530,10 +530,10 @@ function add_calibration_shift!(all_local_fits::AbstractVector{LocalFit})
 
     # Create a new vector of LocalFit
     #
-    map!(all_local_fits,all_local_fits) do lf
-        calibrable_model = Model2Fit_Recalibration(lf.model,map)
-        calibrable_model_θ = vcat(lf.θ,1)
-        update_model(lf,calibrable_model,calibrable_model_θ)
+    map!(all_local_fits, all_local_fits) do lf
+        calibrable_model = Model2Fit_Recalibration(lf.model, map)
+        calibrable_model_θ = vcat(lf.θ, 1)
+        update_model(lf, calibrable_model, calibrable_model_θ)
     end
 end
 
@@ -550,26 +550,26 @@ function local_fit!(all_local_fits::AbstractVector{LocalFit})
         #
         θ = local_fit.θ
 
-        abs_θ = @. max(1,abs(θ))
-        lb = max.(0.0,θ-0.8 * abs_θ)
+        abs_θ = @. max(1, abs(θ))
+        lb = max.(0.0, θ - 0.8 * abs_θ)
         ub = θ + 1.2 * abs_θ
         # the last θ is calibration shift, it must be restricted to
         # small change (typically +/- 1 Dalton). If not, there is the
         # risk that a zero height peak moves to the closet peak around
         # (observed for 922 m/z peak by example).
-        lb[end]=θ[end]-1 # valid if add_calibration_shift! scale=1
-        ub[end]=θ[end]+1 # valid if add_calibration_shift! scale=1
+        lb[end] = θ[end] - 1 # valid if add_calibration_shift! scale=1
+        ub[end] = θ[end] + 1 # valid if add_calibration_shift! scale=1
         # 
-        bc = BoundConstraints(lb,ub)
+        bc = BoundConstraints(lb, ub)
         println(bc)
-        
+
         ROI_model = local_fit.model
         ROI_X = local_fit.ROI_calibrated_spectrum.X
         ROI_Y = local_fit.ROI_calibrated_spectrum.Y
-        
-        nls = NLS_ForwardDiff_From_Model2Fit(ROI_model,ROI_X,ROI_Y)
 
-        result = NLS_Solver.solve(nls,θ,bc,conf)
+        nls = NLS_ForwardDiff_From_Model2Fit(ROI_model, ROI_X, ROI_Y)
+
+        result = NLS_Solver.solve(nls, θ, bc, conf)
 
         # Update parameter value
         #
