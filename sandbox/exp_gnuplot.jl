@@ -51,6 +51,15 @@ function free_form(gp::GnuplotScript,gp_line::AbstractString)
     gp
 end
 
+function set_title(gp::GnuplotScript,title::AbstractString;
+                   enhanced::Bool = false)
+    command = "set title '$title'"
+    if enhanced==false
+        command *= " noenhanced"
+    end
+    free_form(gp,command)
+end
+
 function plot!(gp::GnuplotScript,uuid::RegisteredData_UUID,plot_arg::String)
     @assert is_registered(gp,uuid)
 

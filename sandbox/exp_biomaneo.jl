@@ -133,7 +133,8 @@ spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/
 # TODO: store normalization coef and use it to output final results.
 #
 raw_spectrum = read_spectrum_Biomaneo(spectrum_filename)
-raw_spectrum.Y ./= maximum(raw_spectrum.Y);
+raw_spectrum_max = maximum(raw_spectrum.Y);
+raw_spectrum.Y ./= raw_spectrum_max;
 
 # Load isotopic motif input data ================
 #
@@ -147,16 +148,42 @@ Y_baseline = compute_baseline_snip(raw_spectrum,
 
 spectrum = raw_spectrum - Y_baseline;
 
-begin
+# Note: when using filled plot I get gnuplot warnings:
+# Polygon too complex for filling. ...
+#
+# That's the reason why I use usual plot (without filled curves)
+#
+function plot_baseline(output_filename::AbstractString,
+                       sp_X::AbstractVector,
+                       sp_Y::AbstractVector,
+                       sp_baseline_Y::AbstractVector;
+                       scale_Y::Real = 1)
+    @assert length(sp_X)==length(sp_Y)
+    @assert length(sp_X)==length(sp_baseline_Y)
+    
     gp = GnuplotScript()
-    id = register_data!(gp,hcat(raw_spectrum.X,raw_spectrum.Y,Y_baseline.Y))
-    free_form(gp,"set style fill transparent solid 0.5 noborder")
 
-    plot!(gp,id,"u 1:2  with filledcurve y1=-0.1 lc rgb 'gray50'  t 'raw'")
-    replot!(gp,id,"u 1:3  with filledcurve y1=-0.1 lc rgb 'gray40'  t 'baseline'")
+    set_title(gp,output_filename)
+    
+    id = register_data!(gp,hcat(sp_X,scale_Y*sp_Y,scale_Y*sp_baseline_Y))
+
+    plot!(gp,id,"u 1:2  w l  t 'raw'")
+    replot!(gp,id,"u 1:3  w l lw 2  t 'baseline'")
     plot_baseline_filename = first(splitext(basename(spectrum_filename)))*"-baseline.gp"
-    write(plot_baseline_filename ,gp)
+
+    write(output_filename ,gp)
+
+    nothing
 end
+
+plot_baseline_filename = first(splitext(basename(spectrum_filename)))*"-baseline.gp"
+
+plot_baseline(plot_baseline_filename,
+              raw_spectrum.X,
+              raw_spectrum.Y,
+              Y_baseline.Y,
+              scale_Y = 1+0*raw_spectrum_max)
+
 
 # Create ROI model & spectrum
 # ================
@@ -333,7 +360,7 @@ struct _plot_fit_IsotopicModelExtractedData
     position::Float64
 end
 
-function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
+function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit};scale_Y::Real = 1)
 
     # Transparent
     #
@@ -353,7 +380,7 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
         visit(ROI_model,ROI_spectrum.Y,ROI_spectrum.X,ROI_model_parameter) do m,Y,X,θ
             # if a recalibration is performed, record it for future plot
             if m isa NLS_Fit.Model2Fit_Recalibration
-                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ),Y)
+                ROI_spectrum_calibrated = Spectrum(eval_calibrated_x(m,X,θ), Y)
                 return true
             end
             
@@ -383,9 +410,9 @@ function plot_fit(gp::GnuplotScript,local_fit_vect::AbstractVector{LocalFit})
         #
         #    "curve number" <-> index of all_ROI_isotopicModel_extractedData
         #
-        data = hcat( (isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
+        data = hcat( (scale_Y*isotopicModel_data.Y for isotopicModel_data in ROI_local_model_data) ... ,
                      ROI_spectrum_calibrated.X,
-                     ROI_spectrum_calibrated.Y)
+                     scale_Y*ROI_spectrum_calibrated.Y)
         data_m = size(data,2)
         data_m_last = data_m -2 # number of the last model
         data_m_X = data_m-1
@@ -420,7 +447,8 @@ end
 
 function plot_fit(gp_output_file::String,
                   uncalibrated_spectrum::Spectrum,
-                  local_fit_vect::AbstractVector{LocalFit})
+                  local_fit_vect::AbstractVector{LocalFit};
+                  scale_Y::Number = 1)
     gp = GnuplotScript()
 
         
@@ -428,10 +456,10 @@ function plot_fit(gp_output_file::String,
     # 
     free_form(gp,"set title '$gp_output_file' noenhanced")
 
-    sp_id = register_data!(gp,hcat(uncalibrated_spectrum.X,uncalibrated_spectrum.Y))
+    sp_id = register_data!(gp,hcat(uncalibrated_spectrum.X,scale_Y * uncalibrated_spectrum.Y))
     replot!(gp,sp_id,"u 1:2 with filledcurve y1=-0.1 lc rgb 'gray50' t 'uncalibrated spectrum'")
 
-    plot_fit(gp,local_fit_vect)
+    plot_fit(gp,local_fit_vect,scale_Y = scale_Y)
     write(gp_output_file,gp)
 
     gp
@@ -442,7 +470,7 @@ end
 # Plot result with global calibration
 #
 plot_global_fit_filename = first(splitext(basename(spectrum_filename)))*"-global-fit.gp"
-plot_fit(plot_global_fit_filename ,spectrum, all_fit_result_per_ROI)
+plot_fit(plot_global_fit_filename ,spectrum, all_fit_result_per_ROI,scale_Y = raw_spectrum_max)
 
 # ****************************************************************
 # Now local fit
@@ -566,4 +594,4 @@ local_fit!(all_fit_result_per_ROI);
 # Plot result
 #
 plot_filename = first(splitext(basename(spectrum_filename)))*".gp"
-plot_fit(plot_filename,spectrum,all_fit_result_per_ROI);
+plot_fit(plot_filename,spectrum,all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
