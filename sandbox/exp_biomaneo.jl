@@ -490,9 +490,13 @@ end
 
 # Add a calibration shift
 #
-function add_calibration_shift!(all_local_fits::AbstractVector{LocalFit};scale=1)
+function add_calibration_shift!(all_local_fits::AbstractVector{LocalFit})
     # Create the calibration map ================
     #
+    # Use a scale of 1 Dalton, as scale=1 is an assumption used in
+    # local_ft! to define bound constraints for calibration shift
+    #
+    scale = 1
     map = Map_Translate(scale)
 
     # Create a new vector of LocalFit
@@ -518,8 +522,18 @@ function local_fit!(all_local_fits::AbstractVector{LocalFit})
         θ = local_fit.θ
 
         abs_θ = @. max(1,abs(θ))
-        bc = BoundConstraints(max.(0.0,θ-0.8* abs_θ),θ+1.2*abs_θ)
-
+        lb = max.(0.0,θ-0.8 * abs_θ)
+        ub = θ + 1.2 * abs_θ
+        # the last θ is calibration shift, it must be restricted to
+        # small change (typically +/- 1 Dalton). If not, there is the
+        # risk that a zero height peak moves to the closet peak around
+        # (observed for 922 m/z peak by example).
+        lb[end]=θ[end]-1 # valid if add_calibration_shift! scale=1
+        ub[end]=θ[end]+1 # valid if add_calibration_shift! scale=1
+        # 
+        bc = BoundConstraints(lb,ub)
+        println(bc)
+        
         ROI_model = local_fit.model
         ROI_X = local_fit.ROI_calibrated_spectrum.X
         ROI_Y = local_fit.ROI_calibrated_spectrum.Y
@@ -543,7 +557,7 @@ end
 # Perform local fit ================
 #
 share_shape_parameters!(all_fit_result_per_ROI);
-add_calibration_shift!(all_fit_result_per_ROI,scale = 10);
+add_calibration_shift!(all_fit_result_per_ROI);
 
 local_fit!(all_fit_result_per_ROI);
 
