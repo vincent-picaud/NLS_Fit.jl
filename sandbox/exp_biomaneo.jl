@@ -105,33 +105,34 @@ end
 # ================
 
 # 3 spectres problématiques ================
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt")
+# spectrum_filename = "/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/3.txt"
 
 # with this new version 3120 is ok now! :)
-raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt")
+spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/104235.txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Problematiques/122244.txt"
 
 
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt")
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000100787.txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/txt-minos NMOG/0000128803(d5).txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Reunion_25_Oct/Data_Input/Validation_04/129913.txt"
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_NewBorn/2221206155(d2).txt"
 
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt")
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Spectres_Biomaneo_MF/Heterozygote HbE/0000000036_digt_MF.txt"
 
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/Study_1/Spectres8020_Biomaneo_txt/Groupe 3/Homozygote HbE/0000000003_digt_0001_J1_(Manual)_19-12-19_15-03_0001.txt")
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/Study_1/Spectres8020_Biomaneo_txt/Groupe 3/Homozygote HbE/0000000003_digt_0001_J1_(Manual)_19-12-19_15-03_0001.txt"
 
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt")
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt")
-#raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt")
+# spectrum_filename ="/home/picaud/Data/Spectres_Biomaneo/January_2020_normalized/Heterozygote HbE B Thal/0000000017_digt_0001_J4_(Manual)_19-12-20_14-19_0001.txt"
+# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/0000000095.txt"
+# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/0000000001.txt"
 
-# raw_spectrum = read_spectrum_Biomaneo("/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt")
+# spectrum_filename ="/home/picaud/GitHub/NLS_Models.jl/data/spectrum.txt"
 
 
 # Normalize spectrum ================
 #
 # TODO: store normalization coef and use it to output final results.
 #
+raw_spectrum = read_spectrum_Biomaneo(spectrum_filename)
 raw_spectrum.Y ./= maximum(raw_spectrum.Y);
 
 # Load isotopic motif input data ================
@@ -141,7 +142,7 @@ vect_of_isotopicmotif = hardcoded_IsotopicMotifVect()
 # Remove baseline
 # ================
 Y_baseline = compute_baseline_snip(raw_spectrum,
-                                   snip_halfwindow = 180,
+                                   snip_halfwindow = 80,
                                    smoothing_halfwindow = 20);
 
 spectrum = raw_spectrum - Y_baseline;
@@ -545,6 +546,8 @@ add_calibration_shift!(all_fit_result_per_ROI,scale = 10);
 
 local_fit!(all_fit_result_per_ROI);
 
+
 # Plot result
 #
-plot_fit("demo_local.gp",spectrum,all_fit_result_per_ROI);
+plot_filename = first(splitext(basename(spectrum_filename)))*".gp"
+plot_fit(plot_filename,spectrum,all_fit_result_per_ROI);
