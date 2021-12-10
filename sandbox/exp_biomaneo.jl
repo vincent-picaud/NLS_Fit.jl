@@ -583,6 +583,76 @@ function local_fit!(all_local_fits::AbstractVector{LocalFit})
     all_fit_result_per_ROI
 end
 
+# Extract data to be CSV exported
+#
+Base.@kwdef struct Result_IsotopicMotif
+    name::String
+    position::Real
+    height::Real
+end
+
+function extract_result_isotopicmotif(all_local_fits::AbstractVector{LocalFit})
+
+    extracted = Result_IsotopicMotif[]
+
+    for local_fit in all_local_fits
+
+        ROI_spectrum = local_fit.ROI_calibrated_spectrum
+        ROI_model = local_fit.model
+        ROI_model_parameter = local_fit.θ
+
+        visit(ROI_model, ROI_spectrum.Y, ROI_spectrum.X, ROI_model_parameter) do m, Y, X, θ
+            if get_tagged_data_type(m) === EmbeddedData_IsotopicMotif_Model
+
+                # One must extract peak height. The associated
+                # parameter θ_i depends on model type. 
+                #
+                @assert get_tagged_model_type(m) <: Peak_Motif{Gaussian_Peak}
+                height = θ[1]
+
+                # get isotopic name & position using tagged data
+                #
+                embedded_data = get_tagged_data(m)
+                name = embedded_data._name
+                position = embedded_data._position
+
+                push!(extracted, Result_IsotopicMotif(name = name,
+                    position = position,
+                    height = height))
+
+
+                return false
+            end
+
+            true
+        end
+
+    end
+
+    extracted
+end
+
+# Create the csv file
+#
+function export_csv(output_filename::AbstractString,
+                    all_local_fits::AbstractVector{LocalFit};
+                    scale_Y::Real=1)
+
+    extracted = extract_result_isotopicmotif(all_local_fits)
+
+    n = length(extracted)
+    to_export = Matrix{Any}(undef,2,n)
+
+    for i in 1:n
+        to_export[1,i] = extracted[i].name
+        to_export[2,i] = extracted[i].height * scale_Y
+    end
+
+    writedlm(output_filename,to_export,',')
+
+    nothing 
+end 
+
 # Perform local fit ================
 #
 share_shape_parameters!(all_fit_result_per_ROI);
@@ -593,5 +663,10 @@ local_fit!(all_fit_result_per_ROI);
 
 # Plot result
 #
-plot_filename = first(splitext(basename(spectrum_filename)))*".gp"
-plot_fit(plot_filename,spectrum,all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
+plot_filename = first(splitext(basename(spectrum_filename))) * ".gp"
+plot_fit(plot_filename, spectrum, all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
+
+# Export csv file
+#
+csv_filename = first(splitext(basename(spectrum_filename))) * ".csv"
+export_csv(csv_filename, all_fit_result_per_ROI, scale_Y = raw_spectrum_max);
