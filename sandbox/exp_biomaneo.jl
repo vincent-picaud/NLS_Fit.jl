@@ -237,7 +237,17 @@ result = NLS_Solver.solve(nls, θ_init, bc, conf)
 
 # ****************************************************************
 
-# Store IsotopicMotif data useful for local fitting
+# Store all data associated to a ROI
+#
+# An array of such structure (one per ROI) is created right after the
+# global fit. extract_fit_result_per_group() function
+#
+# This structure if often used.
+#
+# It allows to:
+# - perform local fits
+# - plot local fits
+# - export csv results
 #
 Base.@kwdef struct LocalFit
     data::EmbeddedData_ROI_Complete_Model
