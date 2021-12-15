@@ -179,6 +179,12 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
+[[NLS_Fit]]
+deps = ["ForwardDiff", "NLS_Solver", "StaticArrays"]
+path = ".."
+uuid = "3b0ca1fe-482a-4a6a-9bcb-ed831cc48d07"
+version = "0.1.0"
+
 [[NLS_Solver]]
 deps = ["ForwardDiff", "LinearAlgebra", "Printf", "ReadOnlyArrays"]
 git-tree-sha1 = "a038a4e115f6335fef92bc44c94787308fde358a"
