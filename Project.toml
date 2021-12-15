@@ -9,5 +9,5 @@ NLS_Solver = "4f18ef6b-35d7-46eb-a297-26b97f1ff488"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-BenchmarkTools = "1"
+StaticArrays = "1"
 julia = "1.6"
