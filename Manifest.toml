@@ -154,7 +154,7 @@ uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 deps = ["ForwardDiff", "LinearAlgebra", "Printf", "ReadOnlyArrays"]
 git-tree-sha1 = "a038a4e115f6335fef92bc44c94787308fde358a"
 repo-rev = "main"
-repo-url = "git@github.com:vincent-picaud/NLS_Solver.jl.git"
+repo-url = "https://github.com/vincent-picaud/NLS_Solver.jl.git"
 uuid = "4f18ef6b-35d7-46eb-a297-26b97f1ff488"
 version = "0.2.0"
 

@@ -180,10 +180,10 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
 [[NLS_Fit]]
-deps = ["BenchmarkTools", "DelimitedFiles", "ForwardDiff", "NLS_Solver", "StaticArrays"]
-git-tree-sha1 = "19a1f1a9de46c450d468f7895780ee5a03363f36"
+deps = ["ForwardDiff", "NLS_Solver", "StaticArrays"]
+git-tree-sha1 = "01dcccc3e515d8047e5e586a78d8cce6b99592fb"
 repo-rev = "main"
-repo-url = "git@github.com:vincent-picaud/NLS_Fit.jl.git"
+repo-url = "https://github.com/vincent-picaud/NLS_Fit.jl.git"
 uuid = "3b0ca1fe-482a-4a6a-9bcb-ed831cc48d07"
 version = "0.1.0"
 
@@ -191,7 +191,7 @@ version = "0.1.0"
 deps = ["ForwardDiff", "LinearAlgebra", "Printf", "ReadOnlyArrays"]
 git-tree-sha1 = "a038a4e115f6335fef92bc44c94787308fde358a"
 repo-rev = "main"
-repo-url = "git@github.com:vincent-picaud/NLS_Solver.jl.git"
+repo-url = "https://github.com/vincent-picaud/NLS_Solver.jl.git"
 uuid = "4f18ef6b-35d7-46eb-a297-26b97f1ff488"
 version = "0.2.0"
 

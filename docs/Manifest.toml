@@ -20,12 +20,6 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
-[[BenchmarkTools]]
-deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
-git-tree-sha1 = "940001114a0147b6e4d10624276d56d531dd9b49"
-uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-version = "1.2.2"
-
 [[Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "19a35467a82e236ff51bc17a3a44b69ef35185a2"
@@ -461,10 +455,10 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
 [[NLS_Fit]]
-deps = ["BenchmarkTools", "DelimitedFiles", "ForwardDiff", "NLS_Solver", "StaticArrays"]
-git-tree-sha1 = "8c73878b8c529ee9712fca4fcee6a2b0ce69b2b9"
+deps = ["ForwardDiff", "NLS_Solver", "StaticArrays"]
+git-tree-sha1 = "01dcccc3e515d8047e5e586a78d8cce6b99592fb"
 repo-rev = "main"
-repo-url = "git@github.com:vincent-picaud/NLS_Fit.jl.git"
+repo-url = "https://github.com/vincent-picaud/NLS_Fit.jl.git"
 uuid = "3b0ca1fe-482a-4a6a-9bcb-ed831cc48d07"
 version = "0.1.0"
 
@@ -472,7 +466,7 @@ version = "0.1.0"
 deps = ["ForwardDiff", "LinearAlgebra", "Printf", "ReadOnlyArrays"]
 git-tree-sha1 = "a038a4e115f6335fef92bc44c94787308fde358a"
 repo-rev = "main"
-repo-url = "git@github.com:vincent-picaud/NLS_Solver.jl.git"
+repo-url = "https://github.com/vincent-picaud/NLS_Solver.jl.git"
 uuid = "4f18ef6b-35d7-46eb-a297-26b97f1ff488"
 version = "0.2.0"
 
@@ -566,10 +560,6 @@ version = "1.2.2"
 [[Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-
-[[Profile]]
-deps = ["Printf"]
-uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
 [[Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
