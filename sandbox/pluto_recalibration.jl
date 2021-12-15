@@ -52,7 +52,7 @@ Complete the previous model with a parameterized transformation used as calibrat
 # ╔═╡ 5ceea856-87f0-4874-860d-57cf1f31c5e8
 begin
 	recal_map = Map_Affine_Monotonic(X[1],X[end])
-	recal_model = Recalibration(model,recal_map)
+	recal_model = Model2Fit_Recalibration(model,recal_map)
 
 	θc = Float64[1,0]
 	θ_init_recal_model = vcat(θ_init_model, θc)
@@ -63,7 +63,7 @@ begin
 end
 
 # ╔═╡ fed24429-8e20-4601-8bf8-5a4b401b2534
- NLS_Fit.eval_x(recal_model,X,θ_init_recal_model)
+ NLS_Fit.eval_calibrated_x(recal_model,X,θ_init_recal_model)
 
 # ╔═╡ f331ea35-4d56-4ced-a76e-de621de25593
 md"Define parameter bounds"

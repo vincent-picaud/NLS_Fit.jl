@@ -11,14 +11,18 @@ struct Peak_Motif{P<:Abstract_Model2Fit_Peak} <: Abstract_Model2Fit_Peak
     _profile::Matrix{Float64} # position, height
 end
 
-# ================================================================
+# Visit  ================
+#
+# This is *generic*
+#
+visit_submodel_size(model::Peak_Motif) = 0
 
-# Gaussian peak specialisation
+# Gaussian peak specialisation ****************
 # θ = (h,σ)
 #
 parameter_size(pm::Peak_Motif{Gaussian_Peak}) = 2
 
-function eval_y!(pm::Peak_Motif{Gaussian_Peak},Y::AbstractVector,X::AbstractVector,θ::AbstractVector{T}) where {T}
+function accumulate_y!(pm::Peak_Motif{Gaussian_Peak},Y::AbstractVector,X::AbstractVector,θ::AbstractVector{T}) where {T}
     @assert length(θ) == parameter_size(pm)
 
     h_glob = θ[1]
@@ -30,8 +34,12 @@ function eval_y!(pm::Peak_Motif{Gaussian_Peak},Y::AbstractVector,X::AbstractVect
         μ_loc = pm._profile[i,1]
         h_loc = pm._profile[i,2]
 
-        eval_y!(pm._peak, Y, X, @SVector T[ h_glob*h_loc,μ_loc,σ_glob])
+        accumulate_y!(pm._peak, Y, X, @SVector T[ h_glob*h_loc,μ_loc,σ_glob])
     end
 
     Y
 end 
+
+# Other peak specialisation ****************
+# θ = ...
+#

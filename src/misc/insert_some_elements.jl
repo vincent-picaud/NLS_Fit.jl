@@ -31,6 +31,7 @@ function is_strictly_ordered(indices::AbstractVector{Int})
     true 
 end
 
+
 # A priori, can easily be converted for arbitrary axes:
 # - remplace i_dest by iterate(X_dest)
 # - remplace i_src by iterate(X)
@@ -91,13 +92,16 @@ julia> insert_some_elements(X,indices,elements)
 
 ```
 """
-function insert_some_elements(X::AbstractVector{T},
+function insert_some_elements end
+
+# We first define a helper where elements type is free
+# This allows to use the methods with *iterable* elements
+#
+function _insert_some_elements(X::AbstractVector{T},
                               indices::AbstractVector{Int},
-                              elements::AbstractVector) where {T}
+                              elements) where {T} # elements must be iterable
 
     @assert is_strictly_ordered(indices)
-    @assert length(indices)==length(elements)
-    @assert all(V->axes(V,1) isa Base.OneTo,(X,indices,elements)) # V[i], with i=1..n
     @assert length(indices)==0 || 1 ≤ minimum(indices) ≤ length(X)+length(indices)
 
     X_dest = Vector{T}(undef,length(X)+length(indices))
@@ -122,5 +126,30 @@ function insert_some_elements(X::AbstractVector{T},
     end
   
     X_dest
+end
+
+# Specialize when elements is an AbstractVector
+#
+function insert_some_elements(X::AbstractVector{T},
+                              indices::AbstractVector{Int},
+                              elements::AbstractVector) where {T}
+
+    @assert all(V->axes(V,1) isa Base.OneTo,(X,indices,elements)) # V[i], with i=1..n
+    @assert length(indices)==length(elements)
+
+    _insert_some_elements(X,
+                          indices,
+                          elements)
+end
+
+# Specialize when elements is a constant
+#
+function insert_some_elements(X::AbstractVector{T},
+                              indices::AbstractVector{Int},
+                              elements::T) where {T}
+
+    _insert_some_elements(X,
+                          indices,
+                          Base.Iterators.repeated(elements))
 end
 

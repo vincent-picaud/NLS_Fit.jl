@@ -10,6 +10,6 @@
     X=rand(10)
     Y=alloc_y(model,X,θ)
     
-    @test (@benchmark eval_y!($model,$Y,$X,$θ)).allocs == 0
+    @test (@benchmark accumulate_y!($model,$Y,$X,$θ)).allocs == 0
     
 end

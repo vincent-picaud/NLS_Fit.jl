@@ -1,5 +1,5 @@
 export Map_Affine, Map_Affine_Monotonic
-export eval_x
+export eval_map
 
 # ****************************************************************
 
@@ -37,7 +37,7 @@ end
 
 parameter_size(m::Map_Affine) = 2
 
-function eval_x(m::Map_Affine{T},
+function eval_map(m::Map_Affine{T},
                 X_hat::AbstractVector{T_HAT},
                 θ::AbstractVector{T_θ}) where {T_HAT,T,T_θ}
 
@@ -124,7 +124,7 @@ end
 
 parameter_size(m::Map_Affine_Monotonic) = 2
 
-function eval_x(m::Map_Affine_Monotonic{T},
+function eval_map(m::Map_Affine_Monotonic{T},
                 X_hat::AbstractVector{T_HAT},
                 θ::AbstractVector{T_θ}) where {T_HAT,T,T_θ}
 
