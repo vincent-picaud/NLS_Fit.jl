@@ -9,5 +9,8 @@
 
     θ = rand(parameter_size(model))
 
-    @test (@benchmark eval_y($model,0.0,$θ)).allocs == 0
+    X = rand(10)
+    Y = zeros(10)
+    
+    @test (@benchmark accumulate_y!($model,$Y,$X,$θ)).allocs == 0
 end

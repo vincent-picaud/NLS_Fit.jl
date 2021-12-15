@@ -3,10 +3,10 @@ using Test, BenchmarkTools
 
 @testset "NLS_Fit.jl" begin
 
-    include("peak/Peak.jl")    
+    include("misc/Misc.jl")    
 
-    include("model2fit_sum.jl")    
+    include("map/Map.jl")    
 
-    include("solver_wrappers/Solver_Wrappers.jl")    
-    
+    include("model2fit/Model2Fit.jl")    
+
 end

@@ -64,19 +64,23 @@ end
 NLS_Solver.parameter_size(nls::NLS_ForwardDiff_From_Model2Fit) = parameter_size(nls._fit_model)
 NLS_Solver.residue_size(nls::NLS_ForwardDiff_From_Model2Fit)  = length(nls._Y)
 
-function NLS_Solver.eval_r(nls::NLS_ForwardDiff_From_Model2Fit,θ::AbstractVector) 
-    map(((X_i,Y_i);)->Y_i-eval_y(nls._fit_model,X_i,θ),zip(nls._X,nls._Y))
+function NLS_Solver.eval_r(nls::NLS_ForwardDiff_From_Model2Fit,θ::AbstractVector)
+    Y_model = eval_y(nls._fit_model,nls._X,θ)
+    @. Y_model = nls._Y - Y_model
+    Y_model
 end
 
 
-function NLS_Solver.eval_r_J(nls::NLS_ForwardDiff_From_Model2Fit, θ::AbstractVector{T}) where {T}
+function NLS_Solver.eval_r_J(nls::NLS_ForwardDiff_From_Model2Fit, θ::AbstractVector)
     
-    r_evaluation = (r,θ)->(r .= NLS_Solver.eval_r(nls,θ))
+    # r_evaluation = (r,θ)->(r .= NLS_Solver.eval_r(nls,θ))
     
-    r = Vector{T}(undef,NLS_Solver.residue_size(nls))
+    # r = Vector{T}(undef,NLS_Solver.residue_size(nls))
 
-    J = ForwardDiff.jacobian(r_evaluation, r, θ)
+    #    J = ForwardDiff.jacobian(r_evaluation, r, θ)
 
+    r = NLS_Solver.eval_r(nls,θ)
+    J = ForwardDiff.jacobian(θ->NLS_Solver.eval_r(nls,θ), θ)
     r,J
 end
 
