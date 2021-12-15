@@ -1,12 +1,9 @@
 module NLS_Fit
 
-include("abstract_model2fit.jl")
+include("misc/Misc.jl")
 
-include("model2fit_empty.jl")
-include("model2fit_sum.jl")
+include("map/Map.jl")
 
-include("peak/Peak.jl")
-
-include("solver_wrappers/Solver_Wrappers.jl")
+include("model2fit/Model2Fit.jl")
 
 end

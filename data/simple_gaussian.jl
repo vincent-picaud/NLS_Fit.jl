@@ -10,8 +10,7 @@ model = Gaussian_Peak()
 θ = Float64[2,n/2,3]
 
 X=Float64[1:n;]
-Y=eval_y.(Ref(model),X,Ref(θ)) + 0.1*rand(n)
+Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
 
 writedlm("simple_gaussian.txt",hcat(X,Y))
 
-# readdlm("simple_gaussian.txt")
