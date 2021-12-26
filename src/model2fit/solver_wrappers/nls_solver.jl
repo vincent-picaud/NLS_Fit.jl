@@ -1,43 +1,71 @@
-export NLS_ForwardDiff_From_Model2Fit
-
 import NLS_Solver
-#: AbstractNLS, parameter_size, residue_size, eval_r, eval_r_J
 
 using ForwardDiff
 
-# Important: using "template" parameters allows to have 1 alloc in
-# eval_r (versus 6 if one uses X,Y::AbstractVector)
+export NLS_ForwardDiff_From_Model2Fit
+
+# See details in NLS_ForwardDiff_From_Model2Fit doc
 #
+# In short: by export NLS_Solver, we avoid potential version
+# compatibility problems. The only inconvenience is that user have to
+# use the "NLS_Solver." prefix.
 #
-# Finally MODEL2FIT_TYPE <: Abstract_Model2Fit is parametrized 
+export NLS_Solver
+
+# Important: ################
+#
+# To reduce number of memory allocations it is important to fully
+# parameterize the NLS_ForwardDiff_From_Model2Fit structure
+#
+# NLS_ForwardDiff_From_Model2Fit{MODEL2FIT_TYPE <: Abstract_Model2Fit,
+#                                X_ELEMENT_TYPE,
+#                                Y_ELEMENT_TYPE,
+#                                X_TYPE <: AbstractVector{X_ELEMENT_TYPE},
+#                                Y_TYPE <: AbstractVector{Y_ELEMENT_TYPE}} <: NLS_Solver.AbstractNLS
+#
+# - Without parametrization ( NLS_ForwardDiff_From_Model2Fit <: NLS_Solver.AbstractNLS ):
+#
 # julia> @btime eval_r($nls,$θ)
 #   2.724 μs (44 allocations: 928 bytes)
-# 10-element Vector{Float64}:
-#  0.8056529547193196
-#  0.10344414895180448
-#  0.7746398216971467
-#  0.5705008291976804
-#  0.758504377425209
-#  0.6572756090278895
-#  0.22021418677443244
-#  0.9012363674393303
-#  0.25785439137881183
-#  0.7594027591650859
+#
+# - With parametrization:
 #
 # julia> @btime eval_r($nls,$θ)
 #   842.590 ns (1 allocation: 160 bytes)
-# 10-element Vector{Float64}:
-#  -0.6484862692515055
-#   0.10436137221132202
-#   0.3416337767340343
-#  -0.5195066030780292
-#   0.0635334492635572
-#  -0.2671004288239941
-#  -0.13064413518496942
-#  -0.143200160754688
-#   0.517014266738562
-#   0.21068675449678864
-# 
+#
+@doc raw"""
+
+A wrapper that allows to use the
+[NLS_Solver.jl](https://github.com/vincent-picaud/NLS_Solver.jl)
+package to solve the nonlinear least squares problem associated to a
+model plus its (X,Y) data.
+
+You must construct an instance of nls problem as follows:
+```julia
+NLS_ForwardDiff_From_Model2Fit(fit_model::MODEL2FIT_TYPE,
+                               X::X_TYPE,
+                               Y::Y_TYPE)
+```
+
+You can then use the `NLS_Solver` package as usual, but with prefixed
+`NLS_Solver.`
+
+```@example
+nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
+conf = NLS_Solver.Levenberg_Marquardt_Conf()
+result = NLS_Solver.solve(nls,θ_init,conf)
+```
+
+**CAVEAT:**
+
+Please note that you should **not** explicitly
+```@example
+using NLS_Solver
+```
+as this package is reexported from `NLS_Fit`. 
+Doing so avoids potential version compatibility problems.
+
+"""
 struct NLS_ForwardDiff_From_Model2Fit{MODEL2FIT_TYPE <: Abstract_Model2Fit,
                                       X_ELEMENT_TYPE,
                                       Y_ELEMENT_TYPE,
@@ -72,13 +100,6 @@ end
 
 
 function NLS_Solver.eval_r_J(nls::NLS_ForwardDiff_From_Model2Fit, θ::AbstractVector)
-    
-    # r_evaluation = (r,θ)->(r .= NLS_Solver.eval_r(nls,θ))
-    
-    # r = Vector{T}(undef,NLS_Solver.residue_size(nls))
-
-    #    J = ForwardDiff.jacobian(r_evaluation, r, θ)
-
     r = NLS_Solver.eval_r(nls,θ)
     J = ForwardDiff.jacobian(θ->NLS_Solver.eval_r(nls,θ), θ)
     r,J

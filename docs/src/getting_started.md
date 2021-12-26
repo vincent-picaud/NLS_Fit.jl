@@ -55,29 +55,36 @@ parameters using a Levenberg-Marquardt like method.
 
 **Wrap and call a NLS_Solver :**
 
-```@example session
-using NLS_Solver
+This package uses the
+[NLS_Solver](https://github.com/vincent-picaud/NLS_Solver.jl) to
+perform nonlinear least squares regressions. Please note that, to avoid
+potential version problems, it is better **not** `using NLS_Solver` but
+using the embedded version that is present in the `NLS_Fit` package. Doing so, you simply have to add the `NLS_Solver` prefix:
 
+```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
-conf = Levenberg_Marquardt_Conf()
-result = solve(nls,θ_init,conf)
+conf = NLS_Solver.Levenberg_Marquardt_Conf()
+result = NLS_Solver.solve(nls,θ_init,conf)
 ```
 
 **Use result :**
 
 ```@example session
-converged(result)
+NLS_Solver.converged(result)
 ```
 
 ```@example session
-θ_fit = solution(result)
+θ_fit = NLS_Solver.solution(result)
 Y_fit = eval_y(model,X,θ_fit)
 plot!(X,Y_fit, label = "fitted model")
 ```
 
 # Fit with recalibration
 
-This problem is 3 Gaussian peaks at positions 5, 10, 20. However the loaded data `(X,Y)` presents a miscalibrated X. This miscalibrated X is computed from The "true" X as follows:
+In this problem one must fit 3 Gaussian peaks at positions 5, 10, 20. However the
+loaded data `(X,Y)` presents a miscalibrated X. This miscalibrated X
+is computed from The "true" X as follows:
+
 ```math
 X = 1.1\ X_\text{true} + 0.2
 ```
@@ -154,23 +161,23 @@ We must constrain positions, we use a bound constrained solver.
 ε = eps(Float64)
 lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.0] 
 upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,2.0]
-bc = BoundConstraints(lower_bound,upper_bound)
+bc = NLS_Solver.BoundConstraints(lower_bound,upper_bound)
 ```
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(recalibration_model,X,Y)
-conf = Levenberg_Marquardt_BC_Conf()
-result = solve(nls,θ_init_recalibration_model,bc,conf)
+conf = NLS_Solver.Levenberg_Marquardt_BC_Conf()
+result = NLS_Solver.solve(nls,θ_init_recalibration_model,bc,conf)
 ```
 
 **Use result :**
 
 ```@example session
-converged(result)
+NLS_Solver.converged(result)
 ```
 
 ```@example session
-θ_fit_recalibration_model = solution(result)
+θ_fit_recalibration_model = NLS_Solver.solution(result)
 Y_fit_recalibration_model = eval_y(recalibration_model,X,θ_fit_recalibration_model)
 plot!(X,Y_fit_recalibration_model, label = "fitted model")
 ```
@@ -280,20 +287,16 @@ To perform a nonlinear least squares fitting the procedure is as usual:
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law,X,Y)
-conf = Levenberg_Marquardt_Conf()
-result = solve(nls,θ_model_with_σ_law,conf)
+conf = NLS_Solver.Levenberg_Marquardt_Conf()
+result = NLS_Solver.solve(nls,θ_model_with_σ_law,conf)
 ```
 
 ```@example session
-converged(result)
+NLS_Solver.converged(result)
 ```
 
 ```@example session
-solution(result)
-```
-
-```@example session
-θ_fitted = solution(result)
+θ_fitted = NLS_Solver.solution(result)
 Y_fitted = eval_y(model_with_σ_law,X,θ_fitted)
 plot!(X,Y_fitted, label = "fitted model")
 ```
@@ -301,7 +304,7 @@ plot!(X,Y_fitted, label = "fitted model")
 As before, we can get back the fitted parameters of the individual 3 Gaussian peaks:
 
 ```@example session
-get_model_θ(model_with_σ_law,solution(result))
+get_model_θ(model_with_σ_law,θ_fitted)
 ```
 
 For comparison the true solution is:
@@ -404,20 +407,16 @@ To perform a nonlinear least squares fitting the procedure is as usual:
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law,X,Y)
-conf = Levenberg_Marquardt_Conf()
-result = solve(nls,θ_model_with_σ_law,conf)
+conf = NLS_Solver.Levenberg_Marquardt_Conf()
+result = NLS_Solver.solve(nls,θ_model_with_σ_law,conf)
 ```
 
 ```@example session
-converged(result)
+NLS_Solver.converged(result)
 ```
 
 ```@example session
-solution(result)
-```
-
-```@example session
-θ_fitted = solution(result)
+θ_fitted = NLS_Solver.solution(result)
 Y_fitted = eval_y(model_with_σ_law,X,θ_fitted)
 plot!(X,Y_fitted, label = "fitted model")
 ```
@@ -425,7 +424,7 @@ plot!(X,Y_fitted, label = "fitted model")
 As before, we can get back the fitted parameters of the individual 3 Gaussian peaks:
 
 ```@example session
-get_model_θ(model_with_σ_law,solution(result))
+get_model_θ(model_with_σ_law,θ_fitted)
 ```
 
 For comparison the true solution is:
@@ -474,13 +473,13 @@ We solve the problem as before
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law_and_recal,X,Y)
-conf = Levenberg_Marquardt_Conf()
-result = solve(nls,θ_model_with_σ_law_and_recal,conf)
+conf = NLS_Solver.Levenberg_Marquardt_Conf()
+result = NLS_Solver.solve(nls,θ_model_with_σ_law_and_recal,conf)
 ```
 
 and plot the solution
 ```@example session
-θ_fitted = solution(result)
+θ_fitted = NLS_Solver.solution(result)
 Y_fitted = eval_y(model_with_σ_law_and_recal,X,θ_fitted)
 
 plot(X,Y, seriestype = :scatter, label = "raw data")

@@ -2,8 +2,6 @@
 
     @testset "memory allocs" begin
 
-        import NLS_Solver
-        
         n = 10
         X = Float64[1:n;]
         Y = rand(n)
