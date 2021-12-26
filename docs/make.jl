@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/vincent-picaud/NLS_Fit.jl",
+    repo="github.com/vincent-picaud/NLS_Fit.jl.git",
     devbranch="main",
 )
