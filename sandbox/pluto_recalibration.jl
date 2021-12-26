@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.1
+# v0.17.3
 
 using Markdown
 using InteractiveUtils
@@ -11,7 +11,7 @@ using Pkg
 Pkg.activate("..")
 
 # ╔═╡ 0f496f40-14bc-45f7-a890-dbe531e2500d
-using NLS_Fit, Plots, DelimitedFiles, NLS_Solver
+using NLS_Fit, Plots, DelimitedFiles
 
 # ╔═╡ c703884c-de01-4539-b8a2-9fb133d0cad6
 md"# Environment & packages"
@@ -54,7 +54,7 @@ begin
 	recal_map = Map_Affine_Monotonic(X[1],X[end])
 	recal_model = Model2Fit_Recalibration(model,recal_map)
 
-	θc = Float64[1,0]
+	θc = Float64[1,1]
 	θ_init_recal_model = vcat(θ_init_model, θc)
 
 	Y_init = eval_y(recal_model,X,θ_init_recal_model)
@@ -73,7 +73,7 @@ begin
 	ε = eps(Float64)
 	lower_bound = Float64[0,5,ε,0,10,ε,0,20,ε,0.5,0.0]
 	upper_bound = Float64[+Inf,5,2.5,+Inf,10,2.5,+Inf,20,2.5,1.5,2.0]
-	bc = BoundConstraints(lower_bound,upper_bound)
+	bc = NLS_Solver.BoundConstraints(lower_bound,upper_bound)
 end
 
 # ╔═╡ e61704f1-5eae-4a35-9d5f-0f734e46ef03
@@ -82,21 +82,21 @@ md"# Solve the nonlinear least squares problem"
 # ╔═╡ e33fe5dd-db88-4de9-8816-b4c36d6765d1
 begin
 	nls = NLS_ForwardDiff_From_Model2Fit(recal_model,X,Y)
-	conf = Levenberg_Marquardt_BC_Conf()
-	result = solve(nls,θ_init_recal_model,bc,conf)
+	conf = NLS_Solver.Levenberg_Marquardt_BC_Conf()
+	result = NLS_Solver.solve(nls,θ_init_recal_model,bc,conf)
 end
 
 # ╔═╡ b2e98c3f-5de5-4c23-bbb7-80d39cf219fd
 md"Converged?"
 
 # ╔═╡ fb6f9b74-1687-4846-b070-58581a1b234b
-converged(result)
+NLS_Solver.converged(result)
 
 # ╔═╡ 4bb856a1-5696-42c8-8e63-fd7abe0eb276
 md"Objective function value"
 
 # ╔═╡ 9fa86072-9483-4b63-8dc9-e94469c1a8e9
-objective_value(result)
+NLS_Solver.objective_value(result)
 
 # ╔═╡ 3367e5bd-3159-4327-90a4-01b7799e7064
 solution(result)
@@ -106,7 +106,7 @@ md"# Plot calibrated model"
 
 # ╔═╡ e7284fe8-79b8-4684-922c-f004cb98333e
 begin
-	θ_fit_recal_model = solution(result)
+	θ_fit_recal_model = NLS_Solver.solution(result)
 	Y_fit_recal_model = eval_y(recal_model,X,θ_fit_recal_model)
 	plot!(X,Y_fit_recal_model, label = "model θ_fit")
 end
