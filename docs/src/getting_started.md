@@ -76,7 +76,7 @@ NLS_Solver.converged(result)
 ```@example session
 θ_fit = NLS_Solver.solution(result)
 Y_fit = eval_y(model,X,θ_fit)
-plot!(X,Y_fit, label = "fitted model")
+plot(X,Y_fit, label = "fitted model")
 ```
 
 # Fit with recalibration
