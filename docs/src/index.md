@@ -1,14 +1,11 @@
-```@meta
-CurrentModule = NLS_Fit
-```
+# Home 
 
-# NLS_Fit
+The goal of this package is to provide an easy to use framework to fit
+models like spectrum peaks.
 
-Documentation for [NLS_Fit](https://github.com/vincent-picaud/NLS_Fit.jl).
-
-```@index
-```
-
-```@autodocs
-Modules = [NLS_Fit]
+```@contents
+Pages = [
+    "simple_fit.md",
+]
+Depth = 3
 ```

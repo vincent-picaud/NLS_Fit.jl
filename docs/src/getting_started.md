@@ -20,6 +20,7 @@ increasing complexity.
 
 # Simple fit
 
+## The data and model
 The first example is a simple Gaussian peak fit. We use the
 `data/simple_gaussian.txt` data file. 
 
@@ -53,7 +54,7 @@ We see that the parameter vector θ is not a good guess to fit the peak
 to the raw data. We will see now how to automatically adjust these
 parameters using a Levenberg-Marquardt like method.
 
-**Wrap and call a NLS_Solver :**
+## Model fitting
 
 This package uses the
 [NLS_Solver](https://github.com/vincent-picaud/NLS_Solver.jl) to
@@ -67,16 +68,19 @@ conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_init,conf)
 ```
 
-**Use result :**
+## Fit result
+
+We can check that the solver converged
 
 ```@example session
 NLS_Solver.converged(result)
 ```
+and plot the fitted model
 
 ```@example session
 θ_fit = NLS_Solver.solution(result)
 Y_fit = eval_y(model,X,θ_fit)
-plot(X,Y_fit, label = "fitted model")
+plot!(X,Y_fit, label = "fitted model", linewidth=3, thickness_scaling = 1)
 ```
 
 # Fit with recalibration
