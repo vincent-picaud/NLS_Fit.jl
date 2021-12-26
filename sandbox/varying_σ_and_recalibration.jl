@@ -1,7 +1,6 @@
 using BenchmarkTools
 using Revise
 using NLS_Fit
-using NLS_Solver
 using DelimitedFiles
 using StatsBase: sample
 
@@ -49,12 +48,12 @@ plot!(X,Y_init)
 # NLS solver
 #
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law_and_recal,X,Y)
-conf = Levenberg_Marquardt_Conf()
-result = solve(nls,θ_model_with_σ_law_and_recal,conf)
+conf = NLS_Solver.Levenberg_Marquardt_Conf()
+result = NLS_Solver.solve(nls,θ_model_with_σ_law_and_recal,conf)
 
 # Plot fitted model
 #
-θ_fitted = solution(result)
+θ_fitted = NLS_Solver.solution(result)
 Y_fitted = eval_y(model_with_σ_law_and_recal,X,θ_fitted)
 
 plot(X,Y, seriestype = :scatter)
