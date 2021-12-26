@@ -15,4 +15,4 @@ model = Gaussian_Peak()
 θ_init = Float64[1,10,5]
 
 nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()

@@ -63,7 +63,7 @@ using the embedded version that is present in the `NLS_Fit` package. Doing so, y
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_init,conf)
 ```
 
@@ -166,7 +166,7 @@ bc = NLS_Solver.BoundConstraints(lower_bound,upper_bound)
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(recalibration_model,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_BC_Conf()
+conf = NLS_Solver.LevenbergMarquardt_BC_Conf()
 result = NLS_Solver.solve(nls,θ_init_recalibration_model,bc,conf)
 ```
 
@@ -287,7 +287,7 @@ To perform a nonlinear least squares fitting the procedure is as usual:
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_model_with_σ_law,conf)
 ```
 
@@ -407,7 +407,7 @@ To perform a nonlinear least squares fitting the procedure is as usual:
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_model_with_σ_law,conf)
 ```
 
@@ -473,7 +473,7 @@ We solve the problem as before
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law_and_recal,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_model_with_σ_law_and_recal,conf)
 ```
 

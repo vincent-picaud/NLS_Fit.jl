@@ -48,7 +48,7 @@ plot!(X,Y_init)
 # NLS solver
 #
 nls = NLS_ForwardDiff_From_Model2Fit(model_with_σ_law_and_recal,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_model_with_σ_law_and_recal,conf)
 
 # Plot fitted model

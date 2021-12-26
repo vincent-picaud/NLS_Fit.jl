@@ -52,7 +52,7 @@ You can then use the `NLS_Solver` package as usual, but with prefixed
 
 ```@example
 nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
-conf = NLS_Solver.Levenberg_Marquardt_Conf()
+conf = NLS_Solver.LevenbergMarquardt_Conf()
 result = NLS_Solver.solve(nls,θ_init,conf)
 ```
 

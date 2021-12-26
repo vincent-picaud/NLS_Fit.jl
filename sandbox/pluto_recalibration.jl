@@ -82,7 +82,7 @@ md"# Solve the nonlinear least squares problem"
 # ╔═╡ e33fe5dd-db88-4de9-8816-b4c36d6765d1
 begin
 	nls = NLS_ForwardDiff_From_Model2Fit(recal_model,X,Y)
-	conf = NLS_Solver.Levenberg_Marquardt_BC_Conf()
+	conf = NLS_Solver.LevenbergMarquardt_BC_Conf()
 	result = NLS_Solver.solve(nls,θ_init_recal_model,bc,conf)
 end
 

@@ -1,7 +1,7 @@
 name = "NLS_Fit"
 uuid = "3b0ca1fe-482a-4a6a-9bcb-ed831cc48d07"
 authors = ["Vincent Picaud"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -11,6 +11,4 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 [compat]
 ForwardDiff = "0.10"
 StaticArrays = "1"
-NLS_Solver = "0.2.0"
-
 julia = "1.6"
