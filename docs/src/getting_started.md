@@ -14,12 +14,14 @@ rootDir  = joinpath(dirname(pathof(NLS_Fit)), "..")
 dataDir = joinpath(rootDir,"data")
 ```
 
-We present here some examples of increasing complexity.
+The goal of this package is to provide an easy to use framework to fit
+models like spectrum peaks. We present here some examples of
+increasing complexity.
 
 # Simple fit
 
 The first example is a simple Gaussian peak fit. We use the
-`data/simple_gaussian.txt` data file.
+`data/simple_gaussian.txt` data file. 
 
 ```@example session
 XY=readdlm(joinpath(dataDir,"simple_gaussian.txt")) # hide
@@ -28,18 +30,28 @@ Y = XY[:,2] # hide
 plot(X,Y, seriestype = :scatter, label = "raw data", title = "Simple 1D Plot")
 ```
 
-The model here is really simple, a single Gaussian peak. One must also
-provide a parameter vector `θ`. For this model, `θ=[h,μ,σ]` where `h`
-is peak height, `μ` its center and `σ` its shape factor (see
-[`Gaussian_Peak`](@ref) for further details). The function `eval_y()`
-eval model Y values given X values and its parameter vector θ.
-
+The model is a single Gaussian peak. 
 ```@example session
 model = Gaussian_Peak()
+```
+The model does no embeds its model parameters. So before being able to evaluate model values one must define a parameter vector θ. For [`Gaussian_Peak`](@ref), this vector is `[h,μ,σ]`. It stores the peak height, its center and its shape factor.
+
+```@example session
 θ_init = Float64[1,10,5]
+```
+
+We now have everything we need to evaluate model values. This is the
+role of the [`eval_y`](@ref) function. This function compute model Y
+values given its parameter vector θ and the evaluation sites X.
+
+```@example session
 Y_init = eval_y(model,X,θ_init)
 plot!(X,Y_init, label = "initial model")
 ```
+
+We see that the parameter vector θ is not a good guess to fit the peak
+to the raw data. We will see now how to automatically adjust these
+parameters using a Levenberg-Marquardt like method.
 
 **Wrap and call a NLS_Solver :**
 
