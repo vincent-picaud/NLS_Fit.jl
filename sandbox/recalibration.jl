@@ -36,36 +36,43 @@ recalibration_model = Model2Fit_Recalibration(model,recalibration_map)
 
 # Solve a bound constrained nonlinear least squares ================
 #
-nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y);
+
+# Objective function ----------------
+#
+nls = NLS_ForwardDiff_From_Model2Fit(recalibration_model,X,Y);
+
+# Bound constraints ----------------
+#
+ε = eps(Float64)
+#                       h1 μ1   σ1,  h2  μ2   σ2   h3   μ3   σ3  θA   θB
+lower_bound = Float64[   0, 5,   ε,   0, 10,   ε,   0,  20,   ε, 0.5, 0.5]
+upper_bound = Float64[ Inf, 5, Inf, Inf, 10, Inf, Inf, 20, Inf, 1.5, 1.5]
+
+bc = NLS_Solver.BoundConstraints(lower_bound,upper_bound)
+
+# Solver ----------------
+#
 conf = NLS_Solver.LevenbergMarquardt_Conf()
-result = NLS_Solver.solve(nls,θ_init,conf)
+
+# Solve the problem ----------------
+#
+result = NLS_Solver.solve(nls,θ_init_recalibration_model,conf)
 
 # Fit result ================
 #
 @assert NLS_Solver.converged(result)
 
-θ_true = Float64[2,25,3] # cheating...
-θ_solver = NLS_Solver.solution(result)
+θ_fit_recalibration_model = NLS_Solver.solution(result)
+Y_fit_recalibration_model = eval_y(recalibration_model,X,θ_fit_recalibration_model)
 
-println("Found $θ_solver, error is $(norm(θ_solver-θ_true,Inf))")
-println("(caveat: error is mainly due to noisy data, not due to solver accuracy)")
-
-# Check solver accuracy by using a noise free input ****************
+# Retrieve calibrated X ----------------
 #
+X_recalibrated = eval_calibrated_x(recalibration_model,X,θ_fit_recalibration_model);
+X_true = (X .- 0.2)/1.1;
 
-# Generate noise free input ================
-#
-n = 50
-model = Gaussian_Peak()
-θ = Float64[2,n/2,3]
+norm(X_recalibrated-X,Inf)
+norm(X_recalibrated-X_true,Inf)
 
-X=Float64[1:n;];
-Y=eval_y(model,X,θ);
 
-# Solve and print new noise free results ================
-#
-nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y);
-result = NLS_Solver.solve(nls,θ_init,conf)
-θ_solver = NLS_Solver.solution(result)
-
-println("Found $θ_solver, error is $(norm(θ_solver-θ_true,Inf))")
+get_calibrated_model(recalibration_model)
+get_calibrated_model_θ(recalibration_model,θ_fit_recalibration_model)

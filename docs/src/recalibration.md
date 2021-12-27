@@ -5,6 +5,7 @@ CurrentModule = NLS_Fit
 ```@setup session
 using NLS_Fit
 using DelimitedFiles
+using LinearAlgebra
 
 using Plots
 ENV["GKSwstype"]=100
@@ -15,6 +16,9 @@ dataDir = joinpath(rootDir,"data")
 ```
 
 # Peak fitting and recalibration
+
+You can reproduce the following computation using
+[sandbox/recalibration.jl](../../sandbox/recalibration.jl).
 
 ## Problem description and data
 
@@ -59,7 +63,7 @@ If we plot this, we get:
 XY=readdlm(joinpath(dataDir,"recalibration.txt")) # hide
 X = XY[:,1] # hide
 Y = XY[:,2] # hide
-plot(X,Y, seriestype = :scatter, label = "raw data", title = "Recalibration")
+plot(X,Y, seriestype = :scatter, label = "raw data")
 ```
 
 We can also plot miscalibrated ``X`` and the "true" one ``X_\text{true}``. We only now ``X``, but as we generated artificial data, we know that 
@@ -79,7 +83,7 @@ We can now plot both ``X`` and ``X_\text{true}``:
 
 ```@example session
 X_true = (X .- 0.2)/1.1
-plot(X_true, seriestype = :scatter, label = "true X", title = "X-axis miscalibration")
+plot(X_true, seriestype = :scatter, markershape = :xcross, label = "true X")
 plot!(X, seriestype = :scatter, label = "miscalibrated X")
 ```
 
@@ -106,13 +110,13 @@ Even if the centers ``\mu_1, \mu_2, \mu_3`` are corrects, the peaks are miss pos
 ```@example session
 Y_uncalibrated_model = eval_y(model,X,θ_uncalibrated_model)
 
-plot(X,Y, seriestype = :scatter, label = "raw data", title = "Recalibration")
+plot(X,Y, seriestype = :scatter, label = "raw data")
 plot!(X,Y_uncalibrated_model, label = "uncalibrated model")
 ```
 
 ## The recalibrable model
 
-The idea to create a recalibrable model ``\hat{m}`` is as follows. We use an initial model ``m(\theta,\X)`` to create a new one where the spatial variable ``\hat{X}`` is transformed ``X=f_{\hat{\theta}}(\hat{X})``:
+The idea to create a recalibrable model ``\hat{m}`` is as follows. We use an initial model ``m(\theta,\hat{X})`` to create a new one where the spatial variable ``\hat{X}`` is transformed ``X=f_{\hat{\theta}}(\hat{X})``:
 ```math
 \hat{m}([\theta,\hat{\theta}],\hat{X})=m(\theta,X=f_{\hat{\theta}}(\hat{X}))
 ```
@@ -155,6 +159,11 @@ This is the syntax we use to define our ``f_{\hat{\theta}}``:
 recalibration_map = Map_Affine(X[1],X[end])
 ```
 
+!!! danger
+    This "scaled" parametrization breaks if one of ``X_A`` or ``X_B`` is null. You can always switch
+	back to the more common (unscaled) affine interpolation formula by imposing ``X_A=1`` or ``X_B=1``: 
+	Example: `Map_Affine(X_A => 1, X_B => 1)`
+
 Now the recalibrable model ``\hat{m}`` is defined as follows:
 
 ```@example session
@@ -175,15 +184,106 @@ which is, in a more readable form, equivalent to:
 
 ## The bound constrained solver
 
+We are nearly ready to solve our problem. Compared to the **Simple
+Gaussian** previous example we add bound constraints on θ.
 
+The problem we want to solve is:
+```math
+\min\limits_{\theta_l \le \theta \le \theta_u} \frac{1}{2}\|Y-m(X,\theta)\|_2^2
+```
 
+The objective function is defined as follows:
+```@example session
+nls = NLS_ForwardDiff_From_Model2Fit(recalibration_model,X,Y)
+```
 
+The constraints are: 
+- ``0 \le h_i`` : we want positive peak heights.
+- ``\mu^{\text{true}}_i = \mu_i`` : peak
+  centers are constants. If this was not the case, the recalibration
+  mapping would be meaning less.
+- ``\epsilon \le \sigma_i`` : the Gaussian peak shape factor must be positives.
+- ``0.5 \le \hat{\theta}_i \le 1.5`` : we keep recalibration transform
+  in a neighbourhood of the identity transform.
+  
+This can be encoded as follows:
 
+```@example session
+ε = eps(Float64)
+#                       h1 μ1   σ1,  h2  μ2   σ2   h3   μ3   σ3  θA   θB
+lower_bound = Float64[   0, 5,   ε,   0, 10,   ε,   0,  20,   ε, 0.5, 0.5]
+upper_bound = Float64[ Inf, 5, Inf, Inf, 10, Inf, Inf, 20, Inf, 1.5, 1.5]
 
+bc = NLS_Solver.BoundConstraints(lower_bound,upper_bound);
+```
 
+We must now choose a bound constrained solver. We use the modified version of the Levenberg-Marquardt method with its default parameters:
 
+```@example session
+conf = NLS_Solver.LevenbergMarquardt_BC_Conf()
+```
 
+We can now solve the problem:
 
+```@example session
+result = NLS_Solver.solve(nls,θ_init_recalibration_model,bc,conf)
+```
+
+## Fit result
+
+First, check that the method converged:
+
+```@example session
+NLS_Solver.converged(result)
+```
+
+and plot the result:
+
+```@example session
+θ_fit_recalibration_model = NLS_Solver.solution(result)
+Y_fit_recalibration_model = eval_y(recalibration_model,X,θ_fit_recalibration_model)
+plot!(X,Y_fit_recalibration_model, linewidth = 3, label = "fitted model")
+```
+
+We see a good agreement between the data and the fitted model, however the plotted ``\hat{X}`` is still the uncalibrated axe. What we want is the transformed one: ``X=f_{\hat{\theta}}(\hat{X})``. This calibrated ``X`` can computed as follows:
+
+```@example session
+X_recalibrated = eval_calibrated_x(recalibration_model,X,θ_fit_recalibration_model)
+plot(X_true, seriestype = :scatter, markershape = :xcross, label = "true X")
+plot!(X, seriestype = :scatter, label = "miscalibrated X")
+plot!(X_recalibrated, seriestype = :scatter, markershape = :cross, label = "recalibrated X")
+```
+
+We see that we retrieved the right calibration:
+- initial miss calibration
+```@example session
+norm(X_true - X, Inf)
+```
+- recalibrated X
+```@example session
+norm(X_true - X_recalibrated, Inf)
+```
+
+We can also retrieve the initial model, the one that needs the calibrated X, with its parameters (the extra ``\hat{\theta}`` are removed). This model is our initial sum of the 3 Gaussian peaks:
+
+```@example session
+model == get_calibrated_model(recalibration_model)
+```
+
+```@example session
+θ_fitted = get_calibrated_model_θ(recalibration_model,θ_fit_recalibration_model)
+```
+
+With this, we can plot the model using the calibrated domain:
+
+```@example session
+Y_fitted = eval_y(model, X_recalibrated, θ_fitted)
+plot(X_recalibrated,Y, seriestype = :scatter, label = "raw data")
+plot!(X_recalibrated,Y_fitted, linewidth = 3, label = "fitted model (after recalibration)")
+```
+
+we clearly see now that, after recalibration, the Gaussian peak
+centers 5, 10, 20 are consistent with the plot.
 
 
 
