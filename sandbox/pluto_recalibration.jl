@@ -21,7 +21,7 @@ md"# Raw data plot"
 
 # ╔═╡ 2d2d35af-2e14-495f-a6c6-dc348a60fc2b
 begin
-	XY = readdlm("../data/simple_recalibration.txt")
+	XY = readdlm("../data/recalibration.txt")
 	X = XY[:,1]
 	Y = XY[:,2] 
 	plot(X,Y, seriestype = :scatter, label = "raw data", title = "Recalibration")
