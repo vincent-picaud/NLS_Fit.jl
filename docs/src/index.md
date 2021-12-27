@@ -6,6 +6,7 @@ models like spectrum peaks.
 ```@contents
 Pages = [
     "simple_fit.md",
+    "recalibration.md",
 ]
 Depth = 3
 ```

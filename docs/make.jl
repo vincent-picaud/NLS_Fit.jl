@@ -17,6 +17,7 @@ makedocs(;
         "Home" => "index.md",
         "Getting started" => [
             "simple_fit.md",
+            "recalibration.md",
             ],
             #            "getting_started.md",
         "API.md"
