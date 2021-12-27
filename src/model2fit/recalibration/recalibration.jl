@@ -35,6 +35,14 @@ is equivalent to
 eval_y(model_to_calibrate,eval_calibrated_x(X_hat, θ_map), [θ])
 ```
 
+# Also see
+
+- [`get_calibration_map`](@ref) 
+- [`get_calibration_map_θ`](@ref) 
+- [`get_calibrated_model`](@ref) 
+- [`get_calibrated_model_θ`](@ref) 
+- [`eval_calibrated_x`](@ref) 
+
 """
 struct Model2Fit_Recalibration{MODEL2FIT_TYPE <: Abstract_Model2Fit, MAP_TYPE <: Abstract_Map}  <: Abstract_Model2Fit
     _model2calibrate::MODEL2FIT_TYPE
@@ -44,8 +52,27 @@ end
 # Specific methods  ================
 #
 
+@doc raw"""
+```julia
+get_calibration_map(model::Model2Fit_Recalibration)::Abstract_Map
+```
+
+Retrieve the calibration map, of type [`Abstract_Map`](@ref).
+
+See: [`Model2Fit_Recalibration`](@ref) 
+"""
 get_calibration_map(model::Model2Fit_Recalibration) = model._map
 
+@doc raw"""
+```julia
+get_calibration_map_θ(model::Model2Fit_Recalibration,
+                      θ::AbstractVector)::AbstractVector
+```
+
+Retrieve the calibration map parameters
+
+See: [`Model2Fit_Recalibration`](@ref) 
+"""
 function get_calibration_map_θ(model::Model2Fit_Recalibration,θ::AbstractVector)
     @assert length(θ) == parameter_size(model)
 
@@ -64,6 +91,7 @@ eval_calibrated_x(m::Model2Fit_Recalibration,X_hat::AbstractVector,θ::AbstractV
 Compute the calibrated ``X`` from the reference domain ``\hat{X}`` for
 the given transformation parameters ``θ``.
 
+See: [`Model2Fit_Recalibration`](@ref) 
 """
 function eval_calibrated_x(model::Model2Fit_Recalibration,X_hat::AbstractVector,θ::AbstractVector)
     map = get_calibration_map(model)
@@ -72,8 +100,26 @@ function eval_calibrated_x(model::Model2Fit_Recalibration,X_hat::AbstractVector,
     eval_map(map, X_hat, map_θ)
 end
 
+@doc raw"""
+```julia
+get_calibrated_model(model::Model2Fit_Recalibration)::Abstract_Model2Fit
+```
+
+Retrieve the underlying model to calibrate
+
+See: [`Model2Fit_Recalibration`](@ref) 
+"""
 get_calibrated_model(model::Model2Fit_Recalibration) = model._model2calibrate
 
+@doc raw"""
+```julia
+get_calibrated_model_θ(model::Model2Fit_Recalibration,
+                       θ::AbstractVector)::AbstractVector
+```
+Retrieve the parameter vector of the underlying model to calibrate
+
+See: [`Model2Fit_Recalibration`](@ref) 
+"""
 function get_calibrated_model_θ(model::Model2Fit_Recalibration,θ::AbstractVector)
     @assert length(θ) == parameter_size(model)
 
