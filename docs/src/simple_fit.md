@@ -27,7 +27,7 @@ The first example is a simple Gaussian peak fit. We use the
 XY=readdlm(joinpath(dataDir,"simple_gaussian.txt")) # hide
 X = XY[:,1] # hide
 Y = XY[:,2] # hide
-plot(X,Y, seriestype = :scatter, label = "raw data", title = "Simple 1D Plot")
+plot(X,Y, seriestype = :scatter, label = "raw data")
 ```
 
 The model is a single Gaussian peak. 
@@ -55,23 +55,43 @@ parameters using a Levenberg-Marquardt like method.
 
 ## Model fitting
 
-This package uses the
-[NLS_Solver](https://github.com/vincent-picaud/NLS_Solver.jl) to
-perform nonlinear least squares regressions. Please note that, to avoid
-potential version problems, it is better **not** `using NLS_Solver` but
-using the embedded version that is present in the `NLS_Fit` package. Doing so, you simply have to add the `NLS_Solver` prefix:
+This package embeds the
+[NLS_Solver.jl](https://github.com/vincent-picaud/NLS_Solver.jl)
+package to perform nonlinear least squares regressions. To use it you
+simply have to add the `NLS_Solver` prefix. The example below explains
+this in details.
+
+We want to solve this nonlinear least squares problem:
+```math
+\min\limits_\theta \frac{1}{2}\|Y-m(X,\theta)\|_2^2
+```
+
+The objective function is created as follows:
 
 ```@example session
 nls = NLS_ForwardDiff_From_Model2Fit(model,X,Y)
+```
+
+We now select the solver, here the Levenberg-Marquardt method
+
+```@example session
 conf = NLS_Solver.LevenbergMarquardt_Conf()
+```
+
+and solve the problem:
+
+```@example session
 result = NLS_Solver.solve(nls,θ_init,conf)
 ```
 
+Note that we have used the `NLS_Solver.` prefix, **without** importing
+again the `NLS_Solver.jl` package.
+
 !!! danger "Caveat"
-    Do not use `using NLS_Solver` as `NLS_Fit` already embeds the `NLS_Solver.jl` package. 
-	To avoid version conflicts, you must use this embedded package version.
-	As shown before, you just have to add a `NLS_Solver` prefix when you need
-    some of the `NLS_Solver.jl` package functionalities. 
+    Do not re-import the `NLS_Solver.jl` package by typing `using NLS_Solver`. 
+	As `NLS_Fit` already embeds this package, this may cause versions conflicts.
+	The right way to go is to add a `NLS_Solver` prefix when you need
+    some of the `NLS_Solver.jl` package functionalities.
 	
 ## Fit result
 
