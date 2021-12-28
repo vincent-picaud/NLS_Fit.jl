@@ -114,7 +114,7 @@ plot(X,Y, seriestype = :scatter, label = "raw data")
 plot!(X,Y_uncalibrated_model, label = "uncalibrated model")
 ```
 
-## The recalibrable model
+## [A model for calibration](@id A_model_for_calibration)
 
 The idea to create a recalibrable model ``\hat{m}`` is as follows. We use an initial model ``m(\theta,\hat{X})`` to create a new one where the spatial variable ``\hat{X}`` is transformed ``X=f_{\hat{\theta}}(\hat{X})``:
 ```math

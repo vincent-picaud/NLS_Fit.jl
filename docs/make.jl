@@ -18,8 +18,9 @@ makedocs(;
         "Getting started" => [
             "simple_fit.md",
             "recalibration.md",
-            ],
-            #            "getting_started.md",
+            "constrained_parameters.md",
+        ],
+        #            "getting_started.md",
         "API.md"
     ],
 )

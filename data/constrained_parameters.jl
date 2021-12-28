@@ -16,5 +16,8 @@ X=Float64[1:0.25:30;]
 n=length(X)
 Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
 
-writedlm("varying_σ.txt",hcat(X,Y))
+rootDir = joinpath(dirname(pathof(NLS_Fit)), "..")
+dataDir = joinpath(rootDir,"data")
+dataFile = joinpath(dataDir,"constrained_parameters.txt")
+writedlm(dataFile,hcat(X,Y))
 
