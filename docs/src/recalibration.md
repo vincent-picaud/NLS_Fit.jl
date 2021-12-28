@@ -18,7 +18,7 @@ dataDir = joinpath(rootDir,"data")
 # Peak fitting and recalibration
 
 You can reproduce the following computation using
-[sandbox/recalibration.jl](../../sandbox/recalibration.jl).
+`sandbox/recalibration.jl`.
 
 ## Problem description and data
 
