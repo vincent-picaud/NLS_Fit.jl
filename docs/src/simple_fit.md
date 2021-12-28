@@ -18,7 +18,7 @@ dataDir = joinpath(rootDir,"data")
 
 You can reproduce the following computation using `sandbox/simple_gaussian.jl`.
 
-## The data and model
+## Data and model
 The first example is a simple Gaussian peak fit. We use the
 `data/simple_gaussian.txt` data file. 
 
