@@ -9,6 +9,7 @@ include("stacked_models.jl")
 
 include("shared_parameters.jl")
 include("mapped_parameters.jl")
+include("const_parameters.jl")
 
 include("peak/Peak.jl")
 

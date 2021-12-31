@@ -16,7 +16,7 @@ dataDir = joinpath(rootDir,"data")
 
 # `Model2Fit` bestiary
 
-We try to catalog all the available model here.
+We try to catalog all the available 1D models.
 
 ## Peak models
 
@@ -24,9 +24,21 @@ We try to catalog all the available model here.
 
 See: [`Gaussian_Peak`](@ref)
 
+## Isotopic motifs
+
+Group several peaks together to form a peak motif.
+
+## Baseline models
+
+TODO
+
 ## Model or Parameter transformations
 
 ### Recalibration
+
+Useful to recalibrate signal knowing some peaks of well defined
+positions.
+
 
 See [`Model2Fit_Recalibration`](@ref) .
 
@@ -40,7 +52,7 @@ See [`Model2Fit_Mapped_Parameters`](@ref)
 
 ### Constant parameters
 
-TODO
+See [`Model2Fit_Const_Parameters`](@ref) 
 
 ### Stacked parameters
 
