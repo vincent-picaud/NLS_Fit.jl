@@ -20,6 +20,7 @@ makedocs(;
             "recalibration.md",
             "mapped_parameters.md",
         ],
+        "model2fit_bestiary.md",
         #            "getting_started.md",
         "API.md"
     ],
