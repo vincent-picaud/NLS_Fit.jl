@@ -18,6 +18,6 @@ Y=eval_y(model,X,θ) + 0.1*(rand(n) .- 0.5)
 
 rootDir = joinpath(dirname(pathof(NLS_Fit)), "..")
 dataDir = joinpath(rootDir,"data")
-dataFile = joinpath(dataDir,"constrained_parameters.txt")
+dataFile = joinpath(dataDir,"mapped_parameters.txt")
 writedlm(dataFile,hcat(X,Y))
 

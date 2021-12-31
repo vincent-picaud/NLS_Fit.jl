@@ -9,7 +9,7 @@ models like spectrum peaks.
 Pages = [
     "simple_fit.md",
     "recalibration.md",
-    "constrained_parameters.md",
+    "mapped_parameters.md",
 ]
 Depth = 3
 ```

@@ -14,9 +14,9 @@ rootDir  = joinpath(dirname(pathof(NLS_Fit)), "..")
 dataDir = joinpath(rootDir,"data")
 ```
 
-# Constrained parameters
+# Mapped parameters
 
-You can reproduce the following computation using `sandbox/constrained_parameters.jl`.
+You can reproduce the following computation using `sandbox/mapped_parameters.jl`.
 
 ## Data and model
 
@@ -40,7 +40,7 @@ This parameter vector is:
 ```
 
 ```@example session
-XY=readdlm(joinpath(dataDir,"constrained_parameters.txt")) # hide
+XY=readdlm(joinpath(dataDir,"mapped_parameters.txt")) # hide
 X = XY[:,1] # hide
 Y = XY[:,2] # hide
 plot(X,Y, seriestype = :scatter, label = "raw data")
