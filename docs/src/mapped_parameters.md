@@ -1,4 +1,4 @@
- ```@meta
+```@meta
 CurrentModule = NLS_Fit
 ```
 
@@ -14,13 +14,19 @@ rootDir  = joinpath(dirname(pathof(NLS_Fit)), "..")
 dataDir = joinpath(rootDir,"data")
 ```
 
+!!! warning WIP, one must create a mechanism to set μ_i = constant
+    (instead of imposing const using bound constraints). This would
+    gain in clarity
+
+
 # Mapped parameters
 
-You can reproduce the following computation using `sandbox/mapped_parameters.jl`.
+You can reproduce the following computation by running
+`sandbox/mapped_parameters.jl`.
 
 ## Data and model
 
-In this example there are 3 Gaussian peaks with different shape factors ``\sigma_1, \sigma_2, \sigma_3``. The goal here is to constrain these shape factors to have an affine dependence with respect to ``X``.
+In this example there are 3 Gaussian peaks with different shape factors ``\sigma_1, \sigma_2, \sigma_3``. The goal here is to constrain these shape factors to have an affine dependence with respect to ``X``. 
 
 Let us plot the initial data and model.
 
@@ -48,9 +54,16 @@ plot(X,Y, seriestype = :scatter, label = "raw data")
 Y_model = eval_y(model,X,θ_model)
 plot!(X,Y_model, label = "initial model")
 ```
-For the model the three shape factors are ``\sigma_i=1``. The data has been generated with ``(\sigma_1, \sigma_2, \sigma_3=(1,1.5,2)``.
 
-It often happens that we want to constraint some parameters to follow a given law. Here we want to create a model where σ follows an affine law:
+For the model the three shape factors are constant
+``\sigma_i=1``. This does not fit well the synthetic data which has
+been generated with ``(\sigma_1, \sigma_2, \sigma_3)=(1,1.5,2)``.
+
+The fit procedure can find the right values for these individual and
+independent ``\sigma_i``, but in practice it is often more robust to
+constrain these parameters to follow a given (physical) law. In this
+example we will create a model where the ``\sigma_i`` follow an affine
+law:
 
 ```math
 σ(X) = L_A(X) σ_A θ_A + L_B(X) σ_B θ_B 
@@ -58,7 +71,9 @@ It often happens that we want to constraint some parameters to follow a given la
 where ``L_A, L_B`` are the Lagrange basis.
 
 A detailed description about this affine function parametrization is
-given in [A model for calibration](@ref A_model_for_calibration).
+given in [A model for calibration](@ref
+A_model_for_calibration). Please reread this section if the following
+two lines make no sense for you.
 
 ```@example session
 # define a map:  X_A => σ_A,  X_B => σ_B
@@ -70,7 +85,7 @@ nothing # hide
 
 We now create a vector of components ``[\mu_1, \mu_2, \mu_3]``. This
 components are the 3 Gaussian peak positions. These positions are used
-find ``\sigma_i=\sigma(μ_i)`` using the `map_pos2sigma`. To write
+to compute the shape factors ``\sigma_i=\sigma(μ_i)`` using the `map_pos2sigma`. To write
 these shape factors at the right emplacements in the `θ_model` vector
 we also need the indices of the ``\sigma_1, \sigma_2, \sigma_3``
 parameters.
@@ -79,6 +94,14 @@ parameters.
 σ_indices = [3,6,9]
 ref_pos   = [5.0, 10.0, 20.0]
 nothing # hide
+```
+
+The indices are found by θ parameter vector inspection:
+```math
+\begin{array}{rcccccccccl}
+ & 1 & 2 & \mathbf{3} & 4 & 5 & \mathbf{6} & 7 & 8 & \mathbf{9} &  \\
+[ & h_1 & \mu_1 & \sigma_1 & h_2 & \mu_2 & \sigma_2 & h_3 & \mu_3 & \sigma_3 & ] 
+\end{array}
 ```
 
 We now have all the required information to create the model where the
