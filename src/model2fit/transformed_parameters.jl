@@ -6,52 +6,77 @@ Create a new model, where ``\theta`` parameters are computed using an
 [`Abstract_Map`](@ref).
 
 ```math
-\hat{m}(X,\hat{\theta)) = m(X,\theta = f(\hat{\theta))
+\hat{m}(X,\hat{\theta)=[\hat{\theta}_m,\hat{\theta}_f]) = m(X,\theta = f_{\hat{\theta}_f}(\hat{\theta}_m))
 ```
 
-# Construtor
+CAVEAT: ``\theta`` size is not necessary equal to ``\hat{\theta}_m`` size
+
+# Constructor
 
 ```julia
-Model2Fit_Transformed_Parameters(model:: Abstract_Model2Fit,
+Model2Fit_Transformed_Parameters(model::Abstract_Model2Fit,
                                  map::Abstract_Map)
 ```
 
-
+# See
+- [`get_model(model::Model2Fit_Transformed_Parameters)`](@ref) 
+- [`get_model_θ(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)`](@ref) 
+- [`get_model_hat_θ_view(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)`](@ref) 
+- [`get_map_hat_θ_view(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)`](@ref) 
 """
 struct Model2Fit_Transformed_Parameters{MODEL <: Abstract_Model2Fit,
                                         MAP <: Abstract_Map} <: Abstract_Model2Fit
     _model::MODEL
+    _map_domain_size::Int # length(X) where map(X,θ̂_map), mandatory to define parameter_size
+    # _map_codomain_size must be = to parameter_size(_model)
     _map::MAP
 
     function Model2Fit_Transformed_Parameters(model::MODEL,
+                                              map_domain_size::Int,
                                               map::MAP) where {MODEL <: Abstract_Model2Fit,
                                                                MAP <: Abstract_Map}
-        
-        new{MODEL,MAP}(model, map)
+        new{MODEL,MAP}(model, map_domain_size, map)
     end
     
 end
 # Specific methods  ================
 #
+function get_model_hat_θ_view(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)
+    @assert parameter_size(hat_model) == length(hat_θ)
+    
+    @view hat_θ[1:hat_model._map_domain_size]
+end 
+function get_map_hat_θ_view(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)
+    @assert parameter_size(hat_model) == length(hat_θ)
+
+    @view hat_θ[(hat_model._map_domain_size+1):end]
+end
+
 @doc raw"""
 ```julia
 get_model(mp::Model2Fit_Transformed_Parameters)::Abstract_Model2Fit
 ```
 
 Get back the wrapped model
+
+See [`Model2Fit_Transformed_Parameters`](@ref) 
 """
 get_model(model::Model2Fit_Transformed_Parameters) = model._model
 
 @doc raw"""
 ```julia
-get_model_θ(mp::Model2Fit_Transformed_Parameters,θ::AbstractVector) -> θ::AbstractVector
+get_model_θ(mp::Model2Fit_Transformed_Parameters, hat_θ::AbstractVector) -> θ::AbstractVector
 ```
 
 Retrieve the parameter vector θ associated to the wrapped model [`get_model`](@ref).
 """
 function get_model_θ(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)
-    θ = eval_map(hat_model._map,hat_θ)
+    model_hat_θ = get_model_hat_θ_view(hat_model,hat_θ)
+    map_hat_θ = get_map_hat_θ_view(hat_model,hat_θ)
 
+    θ = eval_map(hat_model._map,model_hat_θ,map_hat_θ)
+
+    # check that map codomain = model parameter size
     @assert parameter_size(get_model(hat_model)) == length(θ)
 
     θ
@@ -68,7 +93,7 @@ visit_get_θ(hat_model::Model2Fit_Transformed_Parameters,submodel_idx::Int,Y::Ab
 
 # Interface ================
 #
-parameter_size(hat_model::Model2Fit_Transformed_Parameters) = parameter_size(hat_model._map)
+parameter_size(hat_model::Model2Fit_Transformed_Parameters) = hat_model._map_domain_size + parameter_size(hat_model._map)
 
 function accumulate_y!(hat_model::Model2Fit_Transformed_Parameters,Y::AbstractVector,X::AbstractVector,hat_θ::AbstractVector)
     model = get_model(hat_model)
