@@ -108,8 +108,8 @@ Transformed_Parameter_Src_Dest_Map(f_map, src=>dest)
 This `map` can be directly used by [`Model2Fit_Transformed_Parameters`](@ref).
 
 """
-struct Transformed_Parameter_Src_Dest_Map <: Abstract_Map
-    _f_map::Abstract_Map # TODO use a parametrized type (for perfs)
+struct Transformed_Parameter_Src_Dest_Map{MAP<:Abstract_Map} <: Abstract_Map
+    _f_map::MAP
     _src_dest::Matrix{Int} # src=col(1), dest=col(2)
 end
 

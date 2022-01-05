@@ -1,5 +1,6 @@
 export Model2Fit_Transformed_Parameters
 export get_model_θ, get_model
+export create_model_transform_src_insert_dest
 
 @doc raw"""
 
@@ -35,56 +36,14 @@ Model2Fit_Transformed_Parameters(model::Abstract_Model2Fit,
 ## Using `Transformed_Parameter_Src_Dest_Map`
 
 Very often this structure is used with a map of type
-[`Transformed_Parameter_Src_Dest_Map`](@ref). In that case there is a
-dedicated constructor:
+[`Transformed_Parameter_Src_Dest_Map`](@ref). In that case it is
+simpler to use a dedicated function:
+[`create_model_transform_src_insert_dest`](@ref) (follow this link to
+see an example).
 
 # Example
-   
-```jldoctest
-using NLS_Fit
 
-# Two Gaussian peaks with σ(μ) an affine function
-#
-model = Gaussian_Peak() + Gaussian_Peak() 
-
-# model θ is:
-# idx:  1   2  3   4   5   6
-#  θ : h1, μ1, σ1, h2, μ2, σ2
-#
-# hence:
-#
-src  = [2,5]
-dest = [3,6]
-
-# The σ(μ) relation: σ(μ=1)=1 and σ(μ=100)=10 for [θ̂A, θ̂B]=[1, 1]
-#
-f_σ_μ = Map_Affine(1.0=>1.0,100.0=>10.0)
-
-# 
-g_map = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_σ_μ, src=>dest)
-
-model_σ_μ = Model2Fit_Transformed_Parameters(model,g_map)
-
-# Now the model_σ_μ parameters are:
-#
-# [ h1, μ1, h2, μ2, θ̂A, θ̂B ]
-#
-# the initial model is called with:
-#
-# [ h1, μ1, σ1 = affine(μ1, θ̂A, θ̂B), h2, μ2, , σ2 = affine(μ2, θ̂A, θ̂B) ]
-#
-get_model_θ(model_σ_μ, Float64[1,5, 2, 95, 1, 1])
-
-# output
-6-element Vector{Float64}:
-  1.0
-  5.0
-  1.3636363636363638
-  2.0
- 95.0
-  9.545454545454547
-
-```
+TODO: add an example using the general constructor
 
 # Extra methods
 
@@ -113,18 +72,84 @@ struct Model2Fit_Transformed_Parameters{MODEL <: Abstract_Model2Fit,
         new{MODEL,MAP}(model, map_domain_size, map)
     end
 
-    function Model2Fit_Transformed_Parameters(model::MODEL,
-                                              map::Transformed_Parameter_Src_Dest_Map) where {MODEL <: Abstract_Model2Fit}
-        # compute map_domain_size:
-        # -> this is model θ length minus the number of inserted element
-        #
-        map_domain_size = parameter_size(model) - size(map._src_dest,1)
-        @assert map_domain_size ≥ 0
-        
-        new{MODEL,typeof(map)}(model, map_domain_size, map)
-    end
- 
 end
+
+@doc raw"""
+
+This function creates an [`Model2Fit_Transformed_Parameters`](@ref)
+instance from a map of type
+[`Transformed_Parameter_Src_Dest_Map`](@ref).
+
+```julia
+function create_model_transform_src_insert_dest(model, map, src=>dest) -> model
+```
+
+# Example
+   
+```jldoctest
+using NLS_Fit
+
+# Two Gaussian peaks with σ(μ) an affine function
+#
+model = Gaussian_Peak() + Gaussian_Peak() 
+
+# model θ is:
+# idx:  1   2  3   4   5   6
+#  θ : h1, μ1, σ1, h2, μ2, σ2
+#
+# hence:
+#
+src  = [2,5]
+dest = [3,6]
+
+# The σ(μ) relation: σ(μ=1)=1 and σ(μ=100)=10 for [θ̂A, θ̂B]=[1, 1]
+#
+f_σ_μ = Map_Affine(1.0=>1.0,100.0=>10.0)
+
+# Now the model_σ_μ parameters are:
+#
+# [ h1, μ1, h2, μ2, θ̂A, θ̂B ]
+#
+# the initial model is called with:
+#
+# [ h1, μ1, σ1 = affine(μ1, θ̂A, θ̂B), h2, μ2, , σ2 = affine(μ2, θ̂A, θ̂B) ]
+#
+model_σ_μ = create_model_transform_src_insert_dest(model,f_σ_μ,src=>dest)
+
+# Examine that the compute θ takes into account the σ(μ) dependance:
+#
+θ̂ = Float64[1,5, 2, 95, 1, 1]
+θ = get_model_θ(model_σ_μ, θ̂)
+
+# output
+6-element Vector{Float64}:
+  1.0
+  5.0
+  1.3636363636363638
+  2.0
+ 95.0
+  9.545454545454547
+
+```
+
+"""
+function create_model_transform_src_insert_dest(model::Abstract_Model2Fit,
+                                                f_map::Abstract_Map,
+                                                src_dest::Pair{SOURCE,DEST}) where {SOURCE<:AbstractVector{Int},DEST<:AbstractVector{Int}}
+    @assert length(first(src_dest)) == length(last(src_dest))
+    
+    # Initialize g_map (see Transformed_Parameter_Src_Dest_Map
+    #
+    g_map = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_map, src_dest)
+    
+    # compute map_domain_size:
+    # -> this is model θ length minus the number of inserted element
+    #
+    map_domain_size = parameter_size(model) - length(first(src_dest))
+    @assert map_domain_size ≥ 0
+        
+    Model2Fit_Transformed_Parameters(model, map_domain_size, g_map)
+end 
 
 # Specific methods  ================
 #
