@@ -33,11 +33,11 @@ If the function returns `false` the depth-first-search is stopped.
 # Implementation details
 
 The `visit` functionality requires these methods to be defined for each visited model:
-- visit_submodel_size(model)
-- visit_get_submodel(model,submodel_idx)
-- visit_get_Y(model,submodel_idx,Y,X,θ)
-- visit_get_X(model,submodel_idx,Y,X,θ)
-- visit_get_θ(model,submodel_idx,Y,X,θ)
+- `visit_submodel_size(model)`
+- `visit_get_submodel(model,submodel_idx)`
+- `visit_get_Y(model,submodel_idx,Y,X,θ)`
+- `visit_get_X(model,submodel_idx,Y,X,θ)`
+- `visit_get_θ(model,submodel_idx,Y,X,θ)`
 
 There is no need to export these methods.
 

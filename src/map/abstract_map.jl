@@ -1,13 +1,21 @@
 @doc raw"""
+```julia
+abstract type Abstract_Map end
+```
 
-Map base type. 
+This type is an abstraction of a 
+```math
+f:X ↦ Y=f_{\hat{\theta}}(X)
+```
+where ``\hat{\theta}`` is map parameter vector.
 
-This type is an abstraction of a ``f:X ↦ Y=f_{\hat{\theta}}(X)``. 
-Where ``\hat{\theta}`` is map parameter vector.
+Such transformations can be used in various contexts: 
 
-Such transformations can be used in various contexts:
-- calibration task: we have a reference ``\hat{X}`` to a calibrated ``X``
-- parameter transformation: we map a parameter vector ``\hat{θ}`` to a new one ``θ``.
+- calibration task: we have a reference ``\hat{X}`` to a calibrated
+  ``X``, see [`Model2Fit_Recalibration`](@ref).
+
+- parameter transformation: we map a parameter vector ``\hat{θ}`` to a new one ``θ``,
+  see [`Model2Fit_Transformed_Parameters`](@ref).
 
 # Interface
 
@@ -23,6 +31,10 @@ parameter_size(::Abstract_Map) -> Int
 ```
 
 Return ``\hat{θ}`` parameter vector length
+
+# See also
+- [`Abstract_Map`](@ref) 
+
 """
 parameter_size(::Abstract_Map) = @assert(false,"To implement")
 
@@ -32,5 +44,9 @@ eval_map(m::Abstract_Map,X_hat::AbstractVector,hat_θ::AbstractVector) -> X::Abs
 ```
 
 Compute ``X=X(\hat{X})``.
+
+# See also
+- [`Abstract_Map`](@ref) 
+
 """
 eval_map(m::Abstract_Map,X_hat::AbstractVector,hat_θ::AbstractVector) = @assert(false,"To implement")   

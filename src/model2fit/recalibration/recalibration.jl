@@ -12,6 +12,22 @@ export eval_calibrated_x
 @doc raw"""
 Create a calibrable model
 
+More precisely, from an initial model ``m`` and a map ``f``, create a new model ``\hat{m}`` such that:
+```math
+\hat{m}(\hat{X},\hat{\theta}=[\hat{\theta}_m,\hat{\theta}_f]) = m(X=f_{\hat{\theta}_f}(\hat{X}),\hat{\theta}_m)
+```
+In Julia code this means that 
+
+```julia
+eval_y(calibrable_model,X_hat,[θ̂m, θ̂f])
+```
+
+is replaced by
+
+```julia
+eval_y(model_to_calibrate, eval_calibrated_x(X_hat, θ̂f), [θ̂m])
+```
+
 # Constructors
 
 ```julia
@@ -20,20 +36,6 @@ calibrable_model = Model2Fit_Recalibration(model_to_calibrate, calibration_map)
 
 where `model_to_calibrate` is an [`Abstract_Model2Fit`](@ref) and
 `calibration_map` is an [`Abstract_Map`](@ref)
-
-# Explanation
-
-The call
-
-```julia
-eval_y(calibrable_model,X_hat,[θ, θ_map])
-```
-
-is equivalent to 
-
-```julia
-eval_y(model_to_calibrate,eval_calibrated_x(X_hat, θ_map), [θ])
-```
 
 # Also see
 

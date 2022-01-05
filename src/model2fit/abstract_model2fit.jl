@@ -6,8 +6,14 @@ Abstract type, base of all model to fit.
 
 # Interface
 
+The interface is very simple
+
 - [`parameter_size`](@ref) 
 - [`accumulate_y!`](@ref) 
+
+# Convenience functions
+
+- [`eval_y`](@ref) 
 
 """
 abstract type Abstract_Model2Fit end
@@ -29,8 +35,7 @@ parameter_size(::Abstract_Model2Fit)::Int
 
 Return length of the expected parameter vector `θ`
 
-
-Also see : 
+# Also see 
 - [`Abstract_Model2Fit`](@ref)
 """
 parameter_size(model::Abstract_Model2Fit) = @assert(false,"To implement for $(typeof(model)) type!")
@@ -42,7 +47,7 @@ accumulate_y!(::Abstract_Model2Fit,Y::AbstractVector,X::AbstractVector,θ::Abstr
 
 Accumulate model contribution into vector `Y`.
 
-Also see : 
+# Also see 
 - [`Abstract_Model2Fit`](@ref)
 - [`eval_y`](@ref) 
 """
@@ -62,7 +67,7 @@ eval_y(m::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector)::AbstractVect
 A convenience function that call [`accumulate_y!`](@ref) using a zero
 initialized `Y` vector. This returned vector contains model values.
 
-Also see : 
+# Also see 
 - [`Abstract_Model2Fit`](@ref)
 """
 eval_y(m::Abstract_Model2Fit,X::AbstractVector,θ::AbstractVector) = accumulate_y!(m,alloc_y(m,X,θ),X,θ)
