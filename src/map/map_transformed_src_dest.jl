@@ -103,9 +103,13 @@ Transformed_Parameter_Src_Dest_Map(f_map, src=>dest)
   as dest indices are removed, there would no more associated src
   component to apply ``f``
 
+# Also see
+
+This `map` can be directly used by [`Model2Fit_Transformed_Parameters`](@ref).
+
 """
 struct Transformed_Parameter_Src_Dest_Map <: Abstract_Map
-    _f_map::Abstract_Map
+    _f_map::Abstract_Map # TODO use a parametrized type (for perfs)
     _src_dest::Matrix{Int} # src=col(1), dest=col(2)
 end
 

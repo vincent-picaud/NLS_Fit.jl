@@ -3,15 +3,20 @@ export get_model_θ, get_model
 
 @doc raw"""
 
-Create a new model, where ``\theta`` parameters are computed using an
-[`Abstract_Map`](@ref) to define ``\hat{\theta}_m\mapsto
-f_{\hat{\theta}_f}(\hat{\theta}_m)``.
+Create a new model, where the  parameter vector ``\theta`` is computed using an
+[`Abstract_Map`](@ref):
+```math
+ \hat{\theta}\mapsto \theta = f_{\hat{\theta}_f}(\hat{\theta}_m)
+```
 
+The resulting model is thus:
 ```math
 \hat{m}(X,\hat{\theta}=[\hat{\theta}_m,\hat{\theta}_f]) = m(X,\theta = f_{\hat{\theta}_f}(\hat{\theta}_m))
 ```
 
 # Constructor
+
+## General case
 
 ```julia
 Model2Fit_Transformed_Parameters(model::Abstract_Model2Fit,
@@ -21,13 +26,70 @@ Model2Fit_Transformed_Parameters(model::Abstract_Model2Fit,
 
 - `map_domain_size` is the expected ``\hat{\theta}_m`` size. This
   quantity is used to implement model `parameter_size()` method. The
-  reason is that current [`Abstract_Map`](@ref) interface only
+  reason is that the current [`Abstract_Map`](@ref) interface only
   provides ``\hat{\theta}_f`` size (its `parameter_size()` method) but
   tells nothing about ``\hat{\theta}_m`` size.
 - Also, please note that ``\theta`` size is not necessary equal to
   ``\hat{\theta}_m`` size
 
-# See
+## Using `Transformed_Parameter_Src_Dest_Map`
+
+Very often this structure is used with a map of type
+[`Transformed_Parameter_Src_Dest_Map`](@ref). In that case there is a
+dedicated constructor:
+
+# Example
+   
+```jldoctest
+using NLS_Fit
+
+# Two Gaussian peaks with σ(μ) an affine function
+#
+model = Gaussian_Peak() + Gaussian_Peak() 
+
+# model θ is:
+# idx:  1   2  3   4   5   6
+#  θ : h1, μ1, σ1, h2, μ2, σ2
+#
+# hence:
+#
+src  = [2,5]
+dest = [3,6]
+
+# The σ(μ) relation: σ(μ=1)=1 and σ(μ=100)=10 for [θ̂A, θ̂B]=[1, 1]
+#
+f_σ_μ = Map_Affine(1.0=>1.0,100.0=>10.0)
+
+# 
+g_map = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_σ_μ, src=>dest)
+
+model_σ_μ = Model2Fit_Transformed_Parameters(model,g_map)
+
+# Now the model_σ_μ parameters are:
+#
+# [ h1, μ1, h2, μ2, θ̂A, θ̂B ]
+#
+# the initial model is called with:
+#
+# [ h1, μ1, σ1 = affine(μ1, θ̂A, θ̂B), h2, μ2, , σ2 = affine(μ2, θ̂A, θ̂B) ]
+#
+get_model_θ(model_σ_μ, Float64[1,5, 2, 95, 1, 1])
+
+# output
+6-element Vector{Float64}:
+  1.0
+  5.0
+  1.3636363636363638
+  2.0
+ 95.0
+  9.545454545454547
+
+```
+
+# Extra methods
+
+Beside the regular [`Abstract_Model2Fit`](@ref) interface, you can use these extra methods:
+
 - [`get_model(model::Model2Fit_Transformed_Parameters)`](@ref) 
 - [`get_model_θ(hat_model::Model2Fit_Transformed_Parameters,hat_θ::AbstractVector)`](@ref) 
 
@@ -40,8 +102,8 @@ These methods are not exported but may be useful:
 struct Model2Fit_Transformed_Parameters{MODEL <: Abstract_Model2Fit,
                                         MAP <: Abstract_Map} <: Abstract_Model2Fit
     _model::MODEL
-    _map_domain_size::Int # length(X) where map(X,θ̂_map), mandatory to define parameter_size
-    # _map_codomain_size must be = to parameter_size(_model)
+    _map_domain_size::Int # length(X) where map(X,θ̂f), mandatory to define parameter_size
+    # _map_codomain_size must be equal to the wrapped _model parameter_size
     _map::MAP
 
     function Model2Fit_Transformed_Parameters(model::MODEL,
@@ -50,7 +112,18 @@ struct Model2Fit_Transformed_Parameters{MODEL <: Abstract_Model2Fit,
                                                                MAP <: Abstract_Map}
         new{MODEL,MAP}(model, map_domain_size, map)
     end
-    
+
+    function Model2Fit_Transformed_Parameters(model::MODEL,
+                                              map::Transformed_Parameter_Src_Dest_Map) where {MODEL <: Abstract_Model2Fit}
+        # compute map_domain_size:
+        # -> this is model θ length minus the number of inserted element
+        #
+        map_domain_size = parameter_size(model) - size(map._src_dest,1)
+        @assert map_domain_size ≥ 0
+        
+        new{MODEL,typeof(map)}(model, map_domain_size, map)
+    end
+ 
 end
 
 # Specific methods  ================

@@ -2,6 +2,8 @@
 
     include("model_sum.jl")    
     include("const_parameters.jl")
+
+    include("transformed_parameters.jl")
     
     include("peak/Peak.jl")    
 
