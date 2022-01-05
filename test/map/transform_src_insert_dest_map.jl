@@ -1,4 +1,4 @@
-@testset "map_transformed_src_dest.jl" begin
+@testset "transform_src_insert_dest_map.jl" begin
 
     @testset "test 1" begin
 
@@ -16,7 +16,7 @@
         hat_θ_model = Float64[1:5;]
         deleteat!(hat_θ_model,dest)
 
-        map_s_d = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_map,src=>dest)
+        map_s_d = NLS_Fit.Transform_Src_Insert_Dest_Map(f_map,src=>dest)
 
         θ = eval_map(map_s_d,hat_θ_model,hat_θ_map)
 
@@ -38,7 +38,7 @@
         hat_θ_model = Float64[1:5;]
         deleteat!(hat_θ_model,sort(dest))
         
-        map_s_d = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_map,src=>dest)
+        map_s_d = NLS_Fit.Transform_Src_Insert_Dest_Map(f_map,src=>dest)
         
         θ = eval_map(map_s_d,hat_θ_model,hat_θ_map)
         

@@ -3,5 +3,5 @@ include("map_translate.jl")
 include("map_affine.jl")
 
 include("map_from_vectfunc.jl")
-include("map_transformed_src_dest.jl")
+include("transform_src_insert_dest_map.jl")
 

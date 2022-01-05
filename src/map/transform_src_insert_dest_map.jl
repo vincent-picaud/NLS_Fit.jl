@@ -1,6 +1,3 @@
-# TODO: add tests
-
-
 # An helper private function
 #
 # Role: modify src index taken into account that dest component are removed
@@ -78,7 +75,7 @@ dest = [2,3]
 θ̂m = Float64[1:5;]       #  [1,2,3,4,5] 
 θ̂m = deleteat!(θ̂m,dest)  #  [1,4,5]
 
-map_s_d = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_map,src=>dest)
+map_s_d = NLS_Fit.Transform_Src_Insert_Dest_Map(f_map,src=>dest)
 
 θ = eval_map(map_s_d,θ̂m,θ̂f)
 
@@ -94,7 +91,7 @@ map_s_d = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_map,src=>dest)
 # Constructor
 
 ```julia
-Transformed_Parameter_Src_Dest_Map(f_map, src=>dest)
+Transform_Src_Insert_Dest_Map(f_map, src=>dest)
 ```
 - `f_map` is the stored [`Abstract_Map`](@ref) map,
 
@@ -108,12 +105,12 @@ Transformed_Parameter_Src_Dest_Map(f_map, src=>dest)
 This `map` can be directly used by [`Model2Fit_Transformed_Parameters`](@ref).
 
 """
-struct Transformed_Parameter_Src_Dest_Map{MAP<:Abstract_Map} <: Abstract_Map
+struct Transform_Src_Insert_Dest_Map{MAP<:Abstract_Map} <: Abstract_Map
     _f_map::MAP
     _src_dest::Matrix{Int} # src=col(1), dest=col(2)
 end
 
-function Transformed_Parameter_Src_Dest_Map(f_map::Abstract_Map, src_dest::Pair{SOURCE,DEST}) where {SOURCE<:AbstractVector{Int},DEST<:AbstractVector{Int}}
+function Transform_Src_Insert_Dest_Map(f_map::Abstract_Map, src_dest::Pair{SOURCE,DEST}) where {SOURCE<:AbstractVector{Int},DEST<:AbstractVector{Int}}
 
     (src, dest) = src_dest
 
@@ -126,12 +123,12 @@ function Transformed_Parameter_Src_Dest_Map(f_map::Abstract_Map, src_dest::Pair{
     # Update src indices
     src_dest[:, 1] .= src_indices_after_dest_removed(src_dest[:, 1], src_dest[:, 2])
 
-    Transformed_Parameter_Src_Dest_Map(f_map, src_dest)
+    Transform_Src_Insert_Dest_Map(f_map, src_dest)
 end
 
-parameter_size(tm::Transformed_Parameter_Src_Dest_Map) = parameter_size(tm._f_map)
+parameter_size(tm::Transform_Src_Insert_Dest_Map) = parameter_size(tm._f_map)
 
-function eval_map(tm::Transformed_Parameter_Src_Dest_Map,hat_model_θ::AbstractVector,hat_map_θ::AbstractVector)
+function eval_map(tm::Transform_Src_Insert_Dest_Map,hat_model_θ::AbstractVector,hat_map_θ::AbstractVector)
     @assert parameter_size(tm) == length(hat_map_θ)
 
     src  = @view tm._src_dest[:,1]

@@ -124,23 +124,23 @@ src_indices_after_dest_removed(source=>dest)
 #
 # where θ̂_i for i ∈ src have be taken, and f_{θf}(θ̂_i) inserted at pos dest
 #
-struct Transformed_Parameter_Src_Dest_Map <: NLS_Fit.Abstract_Map
+struct Transform_Src_Insert_Dest_Map <: NLS_Fit.Abstract_Map
     _map::NLS_Fit.Abstract_Map
     _src_dest::Matrix{Int} # src=col(1), dest=col(2)
 end
 
-function Transformed_Parameter_Src_Dest_Map(map::NLS_Fit.Abstract_Map, source_dest::Pair{SOURCE,DEST}) where {SOURCE<:AbstractVector{Int},DEST<:AbstractVector{Int}}
+function Transform_Src_Insert_Dest_Map(map::NLS_Fit.Abstract_Map, source_dest::Pair{SOURCE,DEST}) where {SOURCE<:AbstractVector{Int},DEST<:AbstractVector{Int}}
     @assert length(first(source_dest))==length(last(source_dest))
     
     src = src_indices_after_dest_removed(source_dest)
     dest = last(source_dest)
 
-    Transformed_Parameter_Src_Dest_Map(map,hcat(src,dest))
+    Transform_Src_Insert_Dest_Map(map,hcat(src,dest))
 end
 
-NLS_Fit.parameter_size(tm::Transformed_Parameter_Src_Dest_Map) = NLS_Fit.parameter_size(tm._map)
+NLS_Fit.parameter_size(tm::Transform_Src_Insert_Dest_Map) = NLS_Fit.parameter_size(tm._map)
 
-function NLS_Fit.eval_map(tm::Transformed_Parameter_Src_Dest_Map,hat_model_θ::AbstractVector,hat_map_θ::AbstractVector)
+function NLS_Fit.eval_map(tm::Transform_Src_Insert_Dest_Map,hat_model_θ::AbstractVector,hat_map_θ::AbstractVector)
     @assert parameter_size(tm) == length(hat_map_θ)
 
     src  = @view tm._src_dest[:,1]
@@ -162,7 +162,7 @@ map_μ_to_σ = Map_Affine(1.0=>1.0,30.0=>5.0)
 source=collect(2:3:n)
 dest=collect(3:3:n)
 
-map = Transformed_Parameter_Src_Dest_Map(map_μ_to_σ,source=>dest)
+map = Transform_Src_Insert_Dest_Map(map_μ_to_σ,source=>dest)
 model = Model2Fit_Transformed_Parameters(model,n-length(dest),map)
 
 NLS_Fit.parameter_size(model)

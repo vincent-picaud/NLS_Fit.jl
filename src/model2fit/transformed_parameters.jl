@@ -33,10 +33,10 @@ Model2Fit_Transformed_Parameters(model::Abstract_Model2Fit,
 - Also, please note that ``\theta`` size is not necessary equal to
   ``\hat{\theta}_m`` size
 
-## Using `Transformed_Parameter_Src_Dest_Map`
+## Using `Transform_Src_Insert_Dest_Map`
 
 Very often this structure is used with a map of type
-[`Transformed_Parameter_Src_Dest_Map`](@ref). In that case it is
+[`Transform_Src_Insert_Dest_Map`](@ref). In that case it is
 simpler to use a dedicated function:
 [`create_model_transform_src_insert_dest`](@ref) (follow this link to
 see an example).
@@ -78,7 +78,7 @@ end
 
 This function creates an [`Model2Fit_Transformed_Parameters`](@ref)
 instance from a map of type
-[`Transformed_Parameter_Src_Dest_Map`](@ref).
+[`Transform_Src_Insert_Dest_Map`](@ref).
 
 ```julia
 function create_model_transform_src_insert_dest(model, map, src=>dest) -> model
@@ -138,9 +138,9 @@ function create_model_transform_src_insert_dest(model::Abstract_Model2Fit,
                                                 src_dest::Pair{SOURCE,DEST}) where {SOURCE<:AbstractVector{Int},DEST<:AbstractVector{Int}}
     @assert length(first(src_dest)) == length(last(src_dest))
     
-    # Initialize g_map (see Transformed_Parameter_Src_Dest_Map
+    # Initialize g_map (see Transform_Src_Insert_Dest_Map
     #
-    g_map = NLS_Fit.Transformed_Parameter_Src_Dest_Map(f_map, src_dest)
+    g_map = NLS_Fit.Transform_Src_Insert_Dest_Map(f_map, src_dest)
     
     # compute map_domain_size:
     # -> this is model θ length minus the number of inserted element
