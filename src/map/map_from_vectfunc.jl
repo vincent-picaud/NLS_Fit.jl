@@ -9,7 +9,7 @@ providing a Julia function
 ```julia
 Map_From_VectFunc(n_θ,f)
 ```
-where `(X,θ)->f(X,θ)` is the wrapped function.
+where ``(X,θ)->Y=f(X,θ)`` is the wrapped function.
 
 # Example
 
