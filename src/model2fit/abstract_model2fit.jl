@@ -1,3 +1,4 @@
+export Abstract_Model2Fit
 export parameter_size, accumulate_y!, eval_y, alloc_y
 
 @doc raw"""
