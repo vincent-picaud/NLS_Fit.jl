@@ -1,7 +1,7 @@
 name = "NLS_Fit"
 uuid = "3b0ca1fe-482a-4a6a-9bcb-ed831cc48d07"
 authors = ["Vincent Picaud"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"

@@ -1,4 +1,4 @@
-export Map_Quadratic, Map_Quadratic_Monotonic
+export Map_Quadratic
 export eval_map
 
 # ****************************************************************
@@ -18,7 +18,7 @@ struct Map_Quadratic{T} <: Abstract_Map
     _hat_to_C::Pair{T,T}
 end
 
-function Map_Quadratic(x_hat_A::T,x_hat_B::T) where {T}
+function Map_Quadratic(x_hat_A::T,x_hat_B::T,x_hat_C::T) where {T}
     Map_Quadratic(x_hat_A=>one(T),
                   x_hat_B=>one(T),
                   x_hat_C=>one(T))
