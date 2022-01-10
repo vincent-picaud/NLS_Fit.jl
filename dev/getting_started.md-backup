@@ -253,7 +253,6 @@ map_pos2sigma = Map_Affine(1.0  => 1.0, 30.0 => 5.0)
 # initial parameter value
 θ_map = ones(NLS_Fit.parameter_size(map_pos2sigma))
 ```
-
 We now create a vector with Gaussian positions μ1, μ2, μ3 that will
 the positions to map to find σ(X). We also need the indices of the
 three σ parameters (that is their indices in θ_model vector).
