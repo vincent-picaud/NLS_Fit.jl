@@ -143,26 +143,28 @@ On the Julia side, the affine transform ``f_{\hat{\theta}}`` is declared as foll
 ```julia
 Map_Affine(hat_X_A => X_A, hat_X_B => X_B)
 ```
-whereas the shortened version
+whereas
 ```julia
 Map_Affine(X_A, X_B)
 ```
 means
 ```julia
-Map_Affine(X_A => X_A, X_B => X_B)
+Map_Affine(X_A => 1, X_B => 1)
 ```
-In that case ``\hat{\theta}=[1,1]`` is the identity transform.
+In that case we get the **usual** (-> unscaled) interpolation where ``
+[\hat{\theta}_A,\hat{\theta}_B]`` defines a map ``f_{\hat{\theta}}``
+such that ``f_{\hat{\theta}}(X_A)=\hat{\theta}_A`` and
+``f_{\hat{\theta}}(X_B)=\hat{\theta}_B``.
 
-This is the syntax we use to define our ``f_{\hat{\theta}}``:
+Here we use the scaled version:
 
 ```@example session
-recalibration_map = Map_Affine(X[1],X[end])
+recalibration_map = Map_Affine(X[1]=>X[1],X[end]=>X[end])
 ```
 
 !!! danger
     This "scaled" parametrization breaks if one of ``X_A`` or ``X_B`` is null. You can always switch
-	back to the more common (unscaled) affine interpolation formula by imposing ``X_A=1`` or ``X_B=1``: 
-	Example: `Map_Affine(X_A => 1, X_B => 1)`
+	back to the usual (unscaled) affine interpolation formula using `Map_Affine(X_A, X_B)`.
 
 Now the recalibrable model ``\hat{m}`` is defined as follows:
 

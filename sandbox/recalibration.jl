@@ -28,7 +28,7 @@ model = Gaussian_Peak() + Gaussian_Peak() + Gaussian_Peak()
 
 # Add an affine calibration ================
 #
-recalibration_map = Map_Affine_Monotonic(X[1],X[end])
+recalibration_map = Map_Affine(X[1]=>X[1],X[end]=>X[end])
 recalibration_model = Model2Fit_Recalibration(model,recalibration_map)
 
 θ_map = Float64[1,1]
